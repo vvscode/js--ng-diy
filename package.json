@@ -1,0 +1,30 @@
+{
+  "name": "js--ng-diy",
+  "version": "0.0.0",
+  "description": "Code for 'Build your own angular.js'",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vvscode/js--ng-diy.git"
+  },
+  "keywords": [
+    "ng",
+    "angular"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vvscode/js--ng-diy/issues"
+  },
+  "homepage": "https://github.com/vvscode/js--ng-diy#readme",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.3"
+  }
+}

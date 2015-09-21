@@ -19,9 +19,11 @@ module.exports = function(grunt) {
           launch_in_dev: ['PhantomJS'],
           before_tests: 'grunt jshint',
           serve_files: [
+            'node_modules/sinon/pkg/sinon.js',
+            'node_modules/lodash/index.js',
+            'node_modules/sinon/pkg/sinon.js',
             'src/**/*.js',
-            'test/**/*.js',
-            'node_modules/sinon/pkg/sinon.js'
+            'test/**/*.js'
           ],
           watch_files: [
             'src/**/*.js',

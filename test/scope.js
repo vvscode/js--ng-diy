@@ -1,15 +1,18 @@
 /* jshint globalstrict: true */
 'use strict';
 
-function Scope(){
+function initWatchVal() {};
 
+
+function Scope(){
   this.$$watchers = [];
 };
 
 Scope.prototype.$watch = function(watchFn, listenerFn) {
   var watcher = {
     watchFn: watchFn,
-    listenerFn: listenerFn
+    listenerFn: listenerFn,
+    last: initWatchVal
   };
   this.$$watchers.push(watcher);
 };

@@ -58,3 +58,7 @@ Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
     return newValue === oldValue || (typeof newValue === 'number' && typeof oldValue === 'number' && isNaN(newValue) && isNaN(oldValue));
   }
 };
+
+Scope.prototype.$eval = function(expr, locals) {
+  return expr(this, locals);
+};

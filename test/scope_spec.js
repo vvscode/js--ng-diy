@@ -298,5 +298,18 @@ describe('Scope', function() {
       scope.$digest();
       expect(scope.asyncEvaluatedTimes).toBe(2);
     });
+
+    it('eventually halts $evalAsyns added by watched', function() {
+      scope.aValue = [1,2,3];
+      scope.$watch(
+        function(scope) {
+          scope.$evalAsync(function(scope){});
+          return scope.aValue;
+        },
+        function(newValue, oldValue, scope) {}
+      );
+
+      expect(function() { scope.$digest();}).toThrow();
+    });
   });
 });

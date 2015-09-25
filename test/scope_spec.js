@@ -241,5 +241,25 @@ describe('Scope', function() {
       });
       expect(scope.counter).toBe(2);
     });
+
+    it('executes $evalAsync\'ed function later in the same cycle', function() {
+      scope.aValue = [1,2,3];
+      scope.acyncEvaluated = false;
+      scope.asyncEvaluatedImmediately = false;
+
+      scope.$watch(
+        function(scope) {
+          return scope.aValue;
+        },
+        function(newValue, oldValue, scope) {
+          scope.$evalAsync(function(scope) {
+            scope.asyncEvaluated = true;
+          });
+        }
+      );
+      scope.$digest();
+      expect(scope.asyncEvaluated).toBe(true);
+      expect(scope.asyncEvaluatedImmediately).toBe(false);
+    });
   });
 });

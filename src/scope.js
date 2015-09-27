@@ -173,6 +173,13 @@ Scope.prototype.$watchGroup = function(watchFns,listenerFn) {
   var changeReactionScheduled = false;
   var firstRun = true;
 
+  if(watchFns.length === 0){
+    self.$evalAsync(function() {
+      listenerFn(newValues, newValues, self);
+    });
+    return;
+  }
+
   function watchGroupListener() {
     if(firstRun) {
       firstRun = false;

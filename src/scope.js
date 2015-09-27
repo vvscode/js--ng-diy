@@ -170,20 +170,27 @@ Scope.prototype.$watchGroup = function(watchFns,listenerFn) {
   var self = this;
   var newValues = new Array(watchFns.length);
   var oldValues = new Array(watchFns.length);
-
   var changeReactionScheduled = false;
+  var firstRun = true;
+
   function watchGroupListener() {
-    listenerFn(newValues, oldValues, self);
+    if(firstRun) {
+      firstRun = false;
+      listenerFn(newValues, newValues, self);
+    } else {
+      listenerFn(newValues, oldValues, self);
+    }
     changeReactionScheduled = false;
-  };
+  }
+
   _.forEach(watchFns, function(watchFn, i){
     self.$watch(watchFn, function(newValue, oldValue) {
       newValues[i] = newValue;
       oldValues[i] = oldValue;
       if(!changeReactionScheduled) {
         changeReactionScheduled = true;
-        listenerFn(newValues, oldValues, self);
+        self.$evalAsync(watchGroupListener);
       }
      });
   });
-}
+};

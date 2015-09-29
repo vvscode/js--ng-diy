@@ -265,3 +265,29 @@ Scope.prototype.$destroy = function() {
   }
   this.$$watchers = null;
 };
+
+
+Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
+  var self = this;
+  var newValue;
+  var oldValue;
+  var changeCount = 0;
+
+  var internalWatchfn = function(scope) {
+    newValue = watchFn(scope);
+
+    if (newValue !== oldValue) {
+      changeCount++;
+    }
+    // check for changes
+    oldValue = newValue;
+
+    return changeCount;
+  };
+
+  var internalListenerFn = function() {
+    listenerFn(newValue, oldValue, self);
+  };
+
+  return this.$watch(internalWatchfn, internalListenerFn);
+};

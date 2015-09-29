@@ -1372,5 +1372,38 @@ describe("Scope", function() {
       scope.$digest();
       expect(scope.counter).toBe(2);
     });
+
+    it('works like a normal watch for NaNs', function() {
+      scope.aValue = 0/0; // NaN
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope){ return scope.aValue; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+    });
+
+    it('notices when the value becomes an array', function() {
+      scope.counter = 0;
+      scope.$watchCollection(
+        function(scope){ return scope.arr;},
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+      scope.arr = [1,2,3];
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
   });
 });

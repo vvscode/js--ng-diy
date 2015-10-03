@@ -1904,6 +1904,16 @@ describe("Scope", function () {
         var event = scope[method]('someEvent');
         expect(event.defaultPrevented).toBe(true);
       });
+
+      it('does not stop on exceptions on '+ method, function() {
+        listener1 = function(ev){
+          throw 'listener1 throwing an exception';
+        };
+        scope.$on('someEvent', listener1);
+        scope.$on('someEvent', listener2);
+        scope[method]('someEvent');
+        expect(listener2).toHaveBeenCalled();
+      });
     });
 
     it('propagates up the scope hierarche on $emit', function() {
@@ -2023,5 +2033,18 @@ describe("Scope", function () {
       scope.$emit('someEvent');
       expect(listener2).toHaveBeenCalled();
     });
+
+    it('fires desctroy when destroyed', function() {
+      scope.$on('$destroy', listener1);
+      scope.$destroy();
+      expect(listener1).toHaveBeenCalled();
+    });
+
+    it('fires $destroy on children destroyed', function() {
+      child.$on('$destroy', listener1);
+      scope.$destroy();
+      expect(listener1).toHaveBeenCalled();
+    });
+
   });
 });

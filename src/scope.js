@@ -349,6 +349,7 @@ Scope.prototype.$destroy = function () {
     var siblings = this.$parent.$$children;
     var indexOfThis = siblings.indexOf(this);
     if(indexOfThis >= 0) {
+      this.$broadcast('$destroy');
       siblings.splice(indexOfThis, 1);
     }
   }
@@ -418,7 +419,11 @@ Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
     if(listeners[i] === null) {
       listeners.splice(i, 1);
     } else {
-      listeners[i].apply(null, listenerArgs);
+      try{
+        listeners[i].apply(null, listenerArgs);
+      } catch(e){
+        console.error(e);
+      }
       i++;
     }
   }

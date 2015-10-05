@@ -11,48 +11,61 @@ function Lexer() {
 
 }
 
-Lexer.prototype.lex = function(text) {
+Lexer.prototype.lex = function (text) {
   this.text = text;
   this.index = 0;
   this.ch = undefined;
   this.tokens = [];
-  while(this.index < this.text.length) {
+  while (this.index < this.text.length) {
     this.ch = this.text.charAt(this.index);
     if(this.isNumber(this.ch) ||
-      (this.ch === '.' && this.isNumber(this.peek()))){
+      (this.ch === '.' && this.isNumber(this.peek()))) {
       this.readNumber();
     } else {
       throw 'Unexpected next character: ' + this.ch;
     }
   }
-
   return this.tokens;
 };
 
-Lexer.prototype.isNumber = function(ch) {
+Lexer.prototype.isNumber = function (ch) {
   return '0' <= ch && ch <= '9';
 };
 
-Lexer.prototype.readNumber = function() {
+Lexer.prototype.isExpOperator = function (ch) {
+  return ch === '-' || ch === '+' || this.isNumber(ch);
+};
+
+Lexer.prototype.readNumber = function () {
   var number = '';
-  while(this.index < this.text.length){
-    var ch = this.text.charAt(this.index);
-    if(ch === '.' || this.isNumber(ch)){
+  while (this.index < this.text.length) {
+    var ch = this.text.charAt(this.index).toLowerCase();
+    if(ch === '.' || this.isNumber(ch)) {
       number += ch;
     } else {
-      break;
+      var nextCh = this.peek();
+      var prevCh = number.charAt(number.length - 1);
+      if(ch === 'e' && this.isExpOperator(nextCh)) {
+        number += ch;
+      } else if(this.isExpOperator(ch) && prevCh === 'e' &&
+        nextCh && this.isNumber(nextCh)) {
+        number += ch;
+      } else if(this.isExpOperator(ch) && prevCh === 'e' && (!nextCh || !this.isNumber(nextCh))) {
+        throw "Invalid exponent";
+      } else {
+        break;
+      }
     }
     this.index++;
   }
-  number = 1*number;
+  number = 1 * number;
   this.tokens.push({
-    text: number,
-    fn: _.constant(number),
-    constant: true
+    text: number, constant: true,
+    fn: _.constant(number)
   });
 };
 
-Lexer.prototype.peek = function() {
+Lexer.prototype.peek = function () {
   if(this.index < this.text.length - 1) {
     return this.text.charAt(this.index + 1);
   }
@@ -64,12 +77,12 @@ function Parser(lexer) {
   this.lexer = lexer;
 }
 
-Parser.prototype.parse = function(text) {
+Parser.prototype.parse = function (text) {
   this.tokens = this.lexer.lex(text);
   return this.primary();
 };
 
-Parser.prototype.primary = function() {
+Parser.prototype.primary = function () {
   var token = this.tokens[0];
   var primary = token.fn;
   if(token.constant) {

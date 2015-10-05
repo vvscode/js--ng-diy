@@ -18,7 +18,8 @@ Lexer.prototype.lex = function(text) {
   this.tokens = [];
   while(this.index < this.text.length) {
     this.ch = this.text.charAt(this.index);
-    if(this.isNumber(this.ch)){
+    if(this.isNumber(this.ch) ||
+      (this.ch === '.' && this.isNumber(this.peek()))){
       this.readNumber();
     } else {
       throw 'Unexpected next character: ' + this.ch;
@@ -36,7 +37,7 @@ Lexer.prototype.readNumber = function() {
   var number = '';
   while(this.index < this.text.length){
     var ch = this.text.charAt(this.index);
-    if(this.isNumber(ch)){
+    if(ch === '.' || this.isNumber(ch)){
       number += ch;
     } else {
       break;
@@ -49,6 +50,14 @@ Lexer.prototype.readNumber = function() {
     fn: _.constant(number),
     constant: true
   });
+};
+
+Lexer.prototype.peek = function() {
+  if(this.index < this.text.length - 1) {
+    return this.text.charAt(this.index + 1);
+  }
+
+  return false;
 };
 
 function Parser(lexer) {

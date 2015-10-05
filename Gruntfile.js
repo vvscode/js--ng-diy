@@ -22,7 +22,7 @@ module.exports = function(grunt) {
             'node_modules/sinon/pkg/sinon.js',
             'node_modules/lodash/index.js',
             'node_modules/sinon/pkg/sinon.js',
-            'src/*/**.js',
+            'src/**/*.js',
             'test/**/*.js'
           ],
           watch_files: [

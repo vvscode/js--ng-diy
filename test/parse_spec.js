@@ -413,5 +413,367 @@ describe("parse", function () {
     expect(fn(scope)).toBeUndefined();
   });
 
+  it('does not allow accessing window as property', function () {
+    var fn = parse('anObject["wnd"]');
+    expect(function () {
+      fn({anObject: {wnd: window}});
+    }).toThrow();
+  });
+
+  it('does not allow calling functions of window', function () {
+    var fn = parse('wnd.scroll(500, 0)');
+    expect(function () {
+      fn({wnd: window});
+    }).toThrow();
+  });
+
+  it('does not allow functions to return window', function () {
+    var fn = parse('getWnd()');
+    expect(function () {
+      fn({getWnd: _.constant(window)});
+    }).toThrow();
+  });
+
+  it('does not allow calling functions on DOM elements', function () {
+    var fn = parse('el.setAttribute("evil", "true")');
+    expect(function () {
+      fn({el: document.documentElement});
+    }).toThrow();
+  });
+
+  it('does not allow calling the aliased function constructor', function () {
+    var fn = parse('fnConstructor("return window;")');
+    expect(function () {
+      fn({
+        fnConstructor: (function () {
+        }).constructor
+      });
+    }).toThrow();
+  });
+
+  it('does not allow calling functions on Object', function () {
+    var fn = parse('obj.create({})');
+    expect(function () {
+      fn({obj: Object});
+    }).toThrow();
+  });
+
+  it('does not allow calling call', function () {
+    var fn = parse('fun.call(obj)');
+    expect(function () {
+      fn({
+        fun: function () {
+        }, obj: {}
+      });
+    }).toThrow();
+  });
+
+  it('does not allow calling apply', function () {
+    var fn = parse('fun.apply(obj)');
+    expect(function () {
+      fn({
+        fun: function () {
+        }, obj: {}
+      });
+    }).toThrow();
+  });
+
+  it('does not allow calling bind', function () {
+    var fn = parse('fun.bind(obj)');
+    expect(function () {
+      fn({
+        fun: function () {
+        }, obj: {}
+      });
+    }).toThrow();
+  });
+
+  it('parses a simple attribute assignment', function () {
+    var fn = parse('anAttribute = 42');
+    var scope = {};
+    fn(scope);
+    expect(scope.anAttribute).toBe(42);
+  });
+
+  it('can have any expression on the right side of attr assignment', function () {
+    var fn = parse('anAttribute = aFunction()');
+    var scope = {aFunction: _.constant(42)};
+    fn(scope);
+    expect(scope.anAttribute).toBe(42);
+  });
+
+  it('parses a nested attribute assignment', function () {
+    var fn = parse('anObject.anAttribute = 42');
+    var scope = {anObject: {}};
+    fn(scope);
+    expect(scope.anObject.anAttribute).toBe(42);
+  });
+
+  it('creates the objects in the setter path that do not exist', function () {
+    var fn = parse('some.nested.path = 42');
+    var scope = {};
+    fn(scope);
+    expect(scope.some.nested.path).toBe(42);
+  });
+
+  it('parses an assignment through attribute access', function () {
+    var fn = parse('anObject["anAttribute"] = 42');
+    var scope = {anObject: {}};
+    fn(scope);
+    expect(scope.anObject.anAttribute).toBe(42);
+  });
+
+  it('parses an assignment through field access that comes after smth else', function () {
+    var fn = parse('anObject["otherObject"].nested = 42');
+    var scope = {anObject: {otherObject: {}}};
+    fn(scope);
+    expect(scope.anObject.otherObject.nested).toBe(42);
+  });
+
+  it('parses an array with non-literals', function () {
+    var fn = parse('[a, b, c()]');
+    expect(fn({a: 1, b: 2, c: _.constant(3)})).toEqual([1, 2, 3]);
+  });
+
+  it('parses an object with non-literals', function () {
+    var fn = parse('{a: a, b: obj.c()}');
+    expect(fn({
+      a: 1,
+      obj: {
+        b: _.constant(2),
+        c: function () {
+          return this.b();
+        }
+      }
+    })).toEqual({a: 1, b: 2});
+  });
+
+  it('makes arrays constant when they only contain constants', function () {
+    var fn = parse('[1, 2, [3, 4]]');
+    expect(fn.constant).toBe(true);
+  });
+
+  it('makes arrays non-constant when they contain non-constants', function () {
+    expect(parse('[1, 2, a]').constant).toBe(false);
+    expect(parse('[1, 2, [[[[[a]]]]]]').constant).toBe(false);
+  });
+
+  it('makes objects constant when they only contain constants', function () {
+    var fn = parse('{a: 1, b: {c: 3}}');
+    expect(fn.constant).toBe(true);
+  });
+
+  it('makes objects non-constant when they contain non-constants', function () {
+    expect(parse('{a: 1, b: c}').constant).toBe(false);
+    expect(parse('{a: 1, b: {c: d}}').constant).toBe(false);
+  });
+
+  it('allows an array element to be an assignment', function () {
+    var fn = parse('[a = 1]');
+    var scope = {};
+    expect(fn(scope)).toEqual([1]);
+    expect(scope.a).toBe(1);
+  });
+
+  it('allows an object value to be an assignment', function () {
+    var fn = parse('{a: b = 1}');
+    var scope = {};
+    expect(fn(scope)).toEqual({a: 1});
+    expect(scope.b).toBe(1);
+  });
+
+  it('parses a unary +', function () {
+    expect(parse('+42')()).toBe(42);
+    expect(parse('+a')({a: 42})).toBe(42);
+  });
+
+  it('parses a unary !', function () {
+    expect(parse('!true')()).toBe(false);
+    expect(parse('!42')()).toBe(false);
+    expect(parse('!a')({a: false})).toBe(true);
+    expect(parse('!!a')({a: false})).toBe(false);
+  });
+
+  it('parses negated value as constant if value is constant', function () {
+    expect(parse('!true').constant).toBe(true);
+    expect(parse('!!true').constant).toBe(true);
+    expect(parse('!a').constant).toBeFalsy();
+  });
+
+  it('parses a unary -', function () {
+    expect(parse('-42')()).toBe(-42);
+    expect(parse('-a')({a: -42})).toBe(42);
+    expect(parse('--a')({a: -42})).toBe(-42);
+  });
+
+  it('parses numerically negated value as constant if needed', function () {
+    expect(parse('-42').constant).toBe(true);
+    expect(parse('-a').constant).toBeFalsy();
+  });
+
+  it('fills missing value in unary - with zero', function () {
+    expect(parse('-a')()).toBe(0);
+  });
+
+  it('parses a multiplication', function () {
+    expect(parse('21 * 2')()).toBe(42);
+  });
+
+  it('parses a division', function () {
+    expect(parse('84 / 2')()).toBe(42);
+  });
+
+  it('parses a remainder', function () {
+    expect(parse('85 % 43')()).toBe(42);
+  });
+
+  it('parses several multiplicatives', function () {
+    expect(parse('36 * 2 % 5')()).toBe(2);
+  });
+
+  it('parses an addition', function () {
+    expect(parse('20 + 22')()).toBe(42);
+  });
+
+  it('parses a subtraction', function () {
+    expect(parse('42 - 22')()).toBe(20);
+  });
+
+  it('treats a missing subtraction operand as zero', function () {
+    expect(parse('a - b')({a: 20})).toBe(20);
+    expect(parse('a - b')({b: 20})).toBe(-20);
+    expect(parse('a - b')({})).toBe(0);
+  });
+
+  it('treats a missing addition operand as zero', function () {
+    expect(parse('a + b')({a: 20})).toBe(20);
+    expect(parse('a + b')({b: 20})).toBe(20);
+  });
+
+  it('returns undefined from addition when both operands missing', function () {
+    expect(parse('a + b')()).toBeUndefined();
+  });
+
+  it('parses relational operators', function () {
+    expect(parse('1 < 2')()).toBe(true);
+    expect(parse('1 > 2')()).toBe(false);
+    expect(parse('1 <= 2')()).toBe(true);
+    expect(parse('2 <= 2')()).toBe(true);
+    expect(parse('1 >= 2')()).toBe(false);
+    expect(parse('2 >= 2')()).toBe(true);
+  });
+
+  it('parses equality operators', function () {
+    expect(parse('42 == 42')()).toBe(true);
+    expect(parse('42 == "42"')()).toBe(true);
+    expect(parse('42 != 42')()).toBe(false);
+    expect(parse('42 === 42')()).toBe(true);
+    expect(parse('42 === "42"')()).toBe(false);
+    expect(parse('42 !== 42')()).toBe(false);
+  });
+
+  it('parses relationals on a higher precedence than equality', function () {
+    expect(parse('2 == "2" > 2 === "2"')()).toBe(false);
+  });
+
+  it('parses additives on a higher precedence than relationals', function () {
+    expect(parse('2 + 3 < 6 - 2')()).toBe(false);
+  });
+
+  it('parses logical AND', function () {
+    expect(parse('true && true')()).toBe(true);
+    expect(parse('true && false')()).toBe(false);
+  });
+
+  it('parses logical OR', function () {
+    expect(parse('true || true')()).toBe(true);
+    expect(parse('true || false')()).toBe(true);
+    expect(parse('fales || false')()).toBe(false);
+  });
+
+  it('parses multiple ANDs', function () {
+    expect(parse('true && true && true')()).toBe(true);
+    expect(parse('true && true && false')()).toBe(false);
+  });
+
+  it('parses multiple ORs', function () {
+    expect(parse('true || true || true')()).toBe(true);
+    expect(parse('true || true || false')()).toBe(true);
+    expect(parse('false || false || true')()).toBe(true);
+    expect(parse('false || false || false')()).toBe(false);
+  });
+
+  it('short-circuits AND', function () {
+    var invoked;
+    var scope = {
+      fn: function () {
+        invoked = true;
+      }
+    };
+
+    parse('false && fn()')(scope);
+
+    expect(invoked).toBeUndefined();
+  });
+
+  it('short-circuits OR', function () {
+    var invoked;
+    var scope = {
+      fn: function () {
+        invoked = true;
+      }
+    };
+
+    parse('true || fn()')(scope);
+
+    expect(invoked).toBeUndefined();
+  });
+
+  it('parses AND with a higher precedence than OR', function () {
+    expect(parse('false && true || true')()).toBe(true);
+  });
+
+  it('parses OR with a lower precedence than equality', function () {
+    expect(parse('1 === 2 || 2 === 2')()).toBeTruthy();
+  });
+
+  it('parses the ternary expression', function () {
+    expect(parse('a === 42 ? true : false')({a: 42})).toBe(true);
+    expect(parse('a === 42 ? true : false')({a: 43})).toBe(false);
+  });
+
+  it('parses OR with a higher precedence than ternary', function () {
+    expect(parse('0 || 1 ? 0 || 2 : 0 || 3')()).toBe(2);
+  });
+
+  it('parses nested ternaries', function () {
+    expect(parse('a === 42 ? b === 42 ? "a and b" : "a" : c === 42 ? "c" : "none"')({
+      a: 44,
+      b: 43,
+      c: 42
+    })).toEqual('c');
+  });
+
+  it('makes ternaries constants if their operands are', function () {
+    expect(parse('true ? 42 : 43').constant).toBeTruthy();
+    expect(parse('true ? 42 : a').constant).toBeFalsy();
+  });
+
+  it('parses parentheses altering precedence order', function () {
+    expect(parse('21 * (3 - 1)')()).toBe(42);
+    expect(parse('false && (true || true)')()).toBe(false);
+    expect(parse('-((a % 2) === 0 ? 1 : 2)')({a: 42})).toBe(-1);
+  });
+
+  it('parses several statements', function () {
+    var fn = parse('a = 1; b = 2; c = 3');
+    var scope = {};
+    fn(scope);
+    expect(scope).toEqual({a: 1, b: 2, c: 3});
+  });
+
+  it('returns the value of the last statement', function () {
+    expect(parse('a = 1; b = 2; a + b')({})).toBe(3);
+  });
 
 });

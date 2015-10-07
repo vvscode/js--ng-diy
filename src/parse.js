@@ -6,8 +6,72 @@ var ESCAPES = {'n': '\n', 'f': '\f', 'r': '\r', 't': '\t', 'v': '\v', '\'': '\''
 var OPERATORS = {
   'null': _.constant(null),
   'true': _.constant(true),
-  'false': _.constant(false)
+  'false': _.constant(false),
+  '+': function (self, locals, a, b) {
+    a = a(self, locals);
+    b = b(self, locals);
+    if(!_.isUndefined(a)) {
+      if(!_.isUndefined(b)) {
+        return a + b;
+      } else {
+        return a;
+      }
+    }
+    return b;
+  },
+  '!': function (self, locals, a) {
+    return !a(self, locals);
+  },
+  '-': function (self, locals, a, b) {
+    a = a(self, locals);
+    b = b(self, locals);
+    return (_.isUndefined(a) ? 0 : a) - (_.isUndefined(b) ? 0 : b);
+  },
+  '*': function (self, locals, a, b) {
+    return a(self, locals) * b(self, locals);
+  },
+  '/': function (self, locals, a, b) {
+    return a(self, locals) / b(self, locals);
+  },
+  '%': function (self, locals, a, b) {
+    return a(self, locals) % b(self, locals);
+  },
+  '<': function (self, locals, a, b) {
+    return a(self, locals) < b(self, locals);
+  },
+  '>': function (self, locals, a, b) {
+    return a(self, locals) > b(self, locals);
+  },
+  '<=': function (self, locals, a, b) {
+    return a(self, locals) <= b(self, locals);
+  },
+  '>=': function (self, locals, a, b) {
+    return a(self, locals) >= b(self, locals);
+  },
+  '==': function (self, locals, a, b) {
+    return a(self, locals) == b(self, locals);
+  },
+  '!=': function (self, locals, a, b) {
+    return a(self, locals) != b(self, locals);
+  },
+  '===': function (self, locals, a, b) {
+    return a(self, locals) === b(self, locals);
+  },
+  '!==': function (self, locals, a, b) {
+    return a(self, locals) !== b(self, locals);
+  },
+  '=': _.noop,
+  '&&': function (self, locals, a, b) {
+    return a(self, locals) && b(self, locals);
+  },
+  '||': function (self, locals, a, b) {
+    return a(self, locals) || b(self, locals);
+  }
 };
+
+var CALL = Function.prototype.call;
+var APPLY = Function.prototype.apply;
+var BIND = Function.prototype.bind;
 
 var ensureSafeMemberName = function (name) {
   if(name === 'constructor' || name === '__proto__' ||
@@ -15,6 +79,32 @@ var ensureSafeMemberName = function (name) {
     name === '__lookupGetter__' || name === '__lookupSetter__') {
     throw 'Attempting to access a disallowed field in Angular expressions!';
   }
+};
+
+var ensureSafeObject = function (obj) {
+  if(obj) {
+    if(obj.document && obj.location && obj.alert && obj.setInterval) {
+      throw 'Referencing window in Angular expressions is disallowed!';
+    } else if(obj.children && (obj.nodeName || (obj.prop && obj.attr && obj.find))) {
+      throw 'Referencing DOM nodes in Angular expressions is disallowed!';
+    } else if(obj.constructor === obj) {
+      throw 'Referencing Function in Angular expressions is disallowed!';
+    } else if(obj.getOwnPropertyNames || obj.getOwnPropertyDescriptor) {
+      throw 'Referencing Object in Angular expressions is disallowed!';
+    }
+  }
+  return obj;
+};
+
+var ensureSafeFunction = function (obj) {
+  if(obj) {
+    if(obj.constructor === obj) {
+      throw 'Referencing Function in Angular expressions is disallowed!';
+    } else if(obj === CALL || obj === APPLY || obj === BIND) {
+      throw 'Referencing call, apply, or bind in Angular expressions is disallowed!';
+    }
+  }
+  return obj;
 };
 
 var simpleGetterFn1 = function (key) {
@@ -67,6 +157,20 @@ var getterFn = _.memoize(function (ident) {
   }
 });
 
+var setter = function (object, path, value) {
+  var keys = path.split('.');
+  while (keys.length > 1) {
+    var key = keys.shift();
+    ensureSafeMemberName(key);
+    if(!object.hasOwnProperty(key)) {
+      object[key] = {};
+    }
+    object = object[key];
+  }
+  object[keys.shift()] = value;
+  return value;
+};
+
 function Lexer() {
 
 }
@@ -84,7 +188,7 @@ Lexer.prototype.lex = function (text) {
       this.readNumber();
     } else if(this.is('\'"')) {
       this.readString(this.ch);
-    } else if(this.is('[],{}:.()')) {
+    } else if(this.is('[],{}:.()?;')) {
       this.tokens.push({
         text: this.ch,
         json: true
@@ -95,7 +199,32 @@ Lexer.prototype.lex = function (text) {
     } else if(this.isWhitespace(this.ch)) {
       this.index++;
     } else {
-      throw 'Unexpected next character: ' + this.ch;
+      var ch2 = this.ch + this.peek();
+      var ch3 = this.ch + this.peek() + this.peek(2);
+      var fn = OPERATORS[this.ch];
+      var fn2 = OPERATORS[ch2];
+      var fn3 = OPERATORS[ch3];
+      if(fn3) {
+        this.tokens.push({
+          text: ch3,
+          fn: fn3
+        });
+        this.index += 3;
+      } else if(fn2) {
+        this.tokens.push({
+          text: ch2,
+          fn: fn2
+        });
+        this.index += 2;
+      } else if(fn) {
+        this.tokens.push({
+          text: this.ch,
+          fn: fn
+        });
+        this.index++;
+      } else {
+        throw 'Unexpected next character: ' + this.ch;
+      }
     }
   }
 
@@ -235,8 +364,12 @@ Lexer.prototype.readIdent = function () {
   var token = {text: text};
   if(OPERATORS.hasOwnProperty(text)) {
     token.fn = OPERATORS[text];
+    token.json = OPERATORS[text];
   } else {
     token.fn = getterFn(text);
+    token.fn.assign = function (self, value) {
+      return setter(self, text, value);
+    };
   }
 
   this.tokens.push(token);
@@ -255,9 +388,10 @@ Lexer.prototype.readIdent = function () {
 };
 
 
-Lexer.prototype.peek = function () {
-  return this.index < this.text.length - 1 ?
-    this.text.charAt(this.index + 1) :
+Lexer.prototype.peek = function (n) {
+  n = n || 1;
+  return this.index + n < this.text.length ?
+    this.text.charAt(this.index + n) :
     false;
 };
 
@@ -270,14 +404,141 @@ function Parser(lexer) {
   this.lexer = lexer;
 }
 
+Parser.ZERO = _.extend(_.constant(0), {constant: true});
+
 Parser.prototype.parse = function (text) {
   this.tokens = this.lexer.lex(text);
-  return this.primary();
+  return this.statements();
 };
+
+Parser.prototype.statements = function () {
+  var statements = [];
+  do {
+    statements.push(this.assignment());
+  } while (this.expect(';'));
+  if(statements.length === 1) {
+    return statements[0];
+  } else {
+    return function (self, locals) {
+      var value;
+      _.forEach(statements, function (statement) {
+        value = statement(self, locals);
+      });
+      return value;
+    };
+  }
+};
+
+Parser.prototype.assignment = function () {
+  var left = this.ternary();
+  if(this.expect('=')) {
+    if(!left.assign) {
+      throw 'Implies assignment but cannot be assigned to';
+    }
+    var right = this.ternary();
+    return function (scope, locals) {
+      return left.assign(scope, right(scope, locals), locals);
+    };
+  }
+  return left;
+};
+
+Parser.prototype.ternary = function () {
+  var left = this.logicalOR();
+  if(this.expect('?')) {
+    var middle = this.ternary();
+    this.consume(':');
+    var right = this.ternary();
+    var ternaryFn = function (self, locals) {
+      return left(self, locals) ? middle(self, locals) : right(self, locals);
+    };
+    ternaryFn.constant = left.constant && middle.constant && right.constant;
+    return ternaryFn;
+  } else {
+    return left;
+  }
+};
+
+Parser.prototype.logicalOR = function () {
+  var left = this.logicalAND();
+  var operator;
+  while ((operator = this.expect('||'))) {
+    left = this.binaryFn(left, operator.fn, this.logicalOR());
+  }
+  return left;
+};
+
+Parser.prototype.logicalAND = function () {
+  var left = this.equality();
+  var operator;
+  while ((operator = this.expect('&&'))) {
+    left = this.binaryFn(left, operator.fn, this.equality());
+  }
+  return left;
+};
+
+Parser.prototype.equality = function () {
+  var left = this.relational();
+  var operator;
+  while ((operator = this.expect('==', '!=', '===', '!=='))) {
+    left = this.binaryFn(left, operator.fn, this.relational());
+  }
+  return left;
+};
+
+Parser.prototype.relational = function () {
+  var left = this.additive();
+  var operator;
+  while ((operator = this.expect('<', '>', '<=', '>='))) {
+    left = this.binaryFn(left, operator.fn, this.additive());
+  }
+  return left;
+};
+
+Parser.prototype.additive = function () {
+  var left = this.multiplicative();
+  var operator;
+  while ((operator = this.expect('+', '-'))) {
+    left = this.binaryFn(left, operator.fn, this.multiplicative());
+  }
+  return left;
+};
+
+Parser.prototype.multiplicative = function () {
+  var left = this.unary();
+  var operator;
+  while ((operator = this.expect('*', '/', '%'))) {
+    left = this.binaryFn(left, operator.fn, this.unary());
+  }
+  return left;
+};
+
+Parser.prototype.unary = function () {
+  var parser = this;
+  var operator;
+  if(this.expect('+')) {
+    return this.primary();
+  } else if((operator = this.expect('!'))) {
+    var operand = parser.unary();
+    var unaryFn = function (self, locals) {
+      return operator.fn(self, locals, operand);
+    };
+    unaryFn.constant = operand.constant;
+    return unaryFn;
+  } else if((operator = this.expect('-'))) {
+    return this.binaryFn(Parser.ZERO, operator.fn, parser.unary());
+  } else {
+    return this.primary();
+  }
+};
+
 
 Parser.prototype.primary = function () {
   var primary;
-  if(this.expect('[')) {
+  if(this.expect('(')) {
+    primary = this.assignment();
+    this.consume(')');
+  } else if(this.expect('[')) {
     primary = this.arrayDeclaration();
   } else if(this.expect('{')) {
     primary = this.object();
@@ -307,6 +568,14 @@ Parser.prototype.primary = function () {
   return primary;
 };
 
+Parser.prototype.binaryFn = function (left, op, right) {
+  var fn = function (self, locals) {
+    return op(self, locals, left, right);
+  };
+  fn.constant = left.constant && right.constant;
+  return fn;
+};
+
 Parser.prototype.arrayDeclaration = function () {
   var elementFns = [];
   if(!this.peek(']')) {
@@ -314,18 +583,18 @@ Parser.prototype.arrayDeclaration = function () {
       if(this.peek(']')) {
         break;
       }
-      elementFns.push(this.primary());
+      elementFns.push(this.assignment());
     } while (this.expect(','));
   }
   this.consume(']');
-  var arrayFn = function () {
+  var arrayFn = function (scope, locals) {
     var elements = _.map(elementFns, function (elementFn) {
-      return elementFn();
+      return elementFn(scope, locals);
     });
     return elements;
   };
   arrayFn.literal = true;
-  arrayFn.constant = true;
+  arrayFn.constant = _.every(elementFns, 'constant');
   return arrayFn;
 };
 
@@ -335,20 +604,20 @@ Parser.prototype.object = function () {
     do {
       var keyToken = this.expect();
       this.consume(':');
-      var valueExpression = this.primary();
+      var valueExpression = this.assignment();
       keyValues.push({key: keyToken.string || keyToken.text, value: valueExpression});
     } while (this.expect(','));
   }
   this.consume('}');
-  var objectFn = function () {
+  var objectFn = function (scope, locals) {
     var object = {};
     _.forEach(keyValues, function (kv) {
-      object[kv.key] = kv.value();
+      object[kv.key] = kv.value(scope, locals);
     });
     return object;
   };
   objectFn.literal = true;
-  objectFn.constant = true;
+  objectFn.constant = _(keyValues).pluck('value').every('constant');
   return objectFn;
 };
 
@@ -356,19 +625,31 @@ Parser.prototype.object = function () {
 Parser.prototype.objectIndex = function (objFn) {
   var indexFn = this.primary();
   this.consume(']');
-  return function (scope, locals) {
+  var objectIndexFn = function (scope, locals) {
     var obj = objFn(scope, locals);
     var index = indexFn(scope, locals);
-    return obj[index];
+    return ensureSafeObject(obj[index]);
   };
+  objectIndexFn.assign = function (self, value, locals) {
+    var obj = ensureSafeObject(objFn(self, locals));
+    var index = indexFn(self, locals);
+    return (obj[index] = value);
+  };
+  return objectIndexFn;
 };
 
 Parser.prototype.fieldAccess = function (objFn) {
-  var getter = this.expect().fn;
-  return function (scope, locals) {
+  var token = this.expect();
+  var getter = token.fn;
+  var fieldAccessFn = function (scope, locals) {
     var obj = objFn(scope, locals);
     return getter(obj);
   };
+  fieldAccessFn.assign = function (self, value, locals) {
+    var obj = objFn(self, locals);
+    return setter(obj, token.text, value);
+  };
+  return fieldAccessFn;
 };
 
 
@@ -381,12 +662,12 @@ Parser.prototype.functionCall = function (fnFn, contextFn) {
   }
   this.consume(')');
   return function (scope, locals) {
-    var context = contextFn ? contextFn(scope, locals) : scope;
-    var fn = fnFn(scope, locals);
+    var context = ensureSafeObject(contextFn ? contextFn(scope, locals) : scope);
+    var fn = ensureSafeFunction(fnFn(scope, locals));
     var args = _.map(argFns, function (argFn) {
       return argFn(scope, locals);
     });
-    return fn.apply(context, args);
+    return ensureSafeObject(fn.apply(context, args));
   };
 };
 

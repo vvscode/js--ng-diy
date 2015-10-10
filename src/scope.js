@@ -1,4 +1,5 @@
 /* jshint globalstrict: true */
+/* global parse: false */
 'use strict';
 
 function initWatchVal() {
@@ -45,14 +46,21 @@ Scope.prototype.$new = function (isolated, parent) {
   }
   parent.$$children.push(child);
   child.$$watchers = [];
-  child.$$children = [];
   child.$$listeners = {};
+  child.$$children = [];
   child.$parent = parent;
   return child;
 };
 
 Scope.prototype.$watch = function (watchFn, listenerFn, valueEq) {
   var self = this;
+
+  watchFn = parse(watchFn);
+
+  if(watchFn.$$watchDelegate) {
+    return watchFn.$$watchDelegate(self, listenerFn, valueEq, watchFn);
+  }
+
   var watcher = {
     watchFn: watchFn,
     listenerFn: listenerFn || function () {
@@ -127,6 +135,8 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
   var trackVeryOldValue = (listenerFn.length > 1);
   var changeCount = 0;
   var firstRun = true;
+
+  watchFn = parse(watchFn);
 
   var internalWatchFn = function (scope) {
     var newLength;
@@ -292,7 +302,7 @@ Scope.prototype.$$everyScope = function (fn) {
 };
 
 Scope.prototype.$eval = function (expr, locals) {
-  return expr(this, locals);
+  return parse(expr)(this, locals);
 };
 
 Scope.prototype.$apply = function (expr) {
@@ -345,24 +355,25 @@ Scope.prototype.$$postDigest = function (fn) {
 };
 
 Scope.prototype.$destroy = function () {
+  this.$broadcast('$destroy');
   if(this.$parent) {
     var siblings = this.$parent.$$children;
     var indexOfThis = siblings.indexOf(this);
     if(indexOfThis >= 0) {
-      this.$broadcast('$destroy');
       siblings.splice(indexOfThis, 1);
     }
   }
   this.$$watchers = null;
+  this.$$listeners = {};
 };
 
-Scope.prototype.$on = function(eventName, listener) {
+Scope.prototype.$on = function (eventName, listener) {
   var listeners = this.$$listeners[eventName];
   if(!listeners) {
     this.$$listeners[eventName] = listeners = [];
   }
   listeners.push(listener);
-  return function() {
+  return function () {
     var index = listeners.indexOf(listener);
     if(index >= 0) {
       listeners[index] = null;
@@ -370,15 +381,15 @@ Scope.prototype.$on = function(eventName, listener) {
   };
 };
 
-Scope.prototype.$emit = function(eventName) {
+Scope.prototype.$emit = function (eventName) {
   var propagationStopped = false;
   var event = {
     name: eventName,
     targetScope: this,
-    stopPropagation: function() {
+    stopPropagation: function () {
       propagationStopped = true;
     },
-    preventDefault: function() {
+    preventDefault: function () {
       event.defaultPrevented = true;
     }
   };
@@ -388,21 +399,21 @@ Scope.prototype.$emit = function(eventName) {
     event.currentScope = scope;
     scope.$$fireEventOnScope(eventName, listenerArgs);
     scope = scope.$parent;
-  } while(scope && !propagationStopped);
+  } while (scope && !propagationStopped);
   event.currentScope = null;
   return event;
 };
 
-Scope.prototype.$broadcast = function(eventName) {
+Scope.prototype.$broadcast = function (eventName) {
   var event = {
     name: eventName,
     targetScope: this,
-    preventDefault: function() {
+    preventDefault: function () {
       event.defaultPrevented = true;
     }
   };
   var listenerArgs = [event].concat(_.rest(arguments));
-  this.$$everyScope(function(scope) {
+  this.$$everyScope(function (scope) {
     event.currentScope = scope;
     scope.$$fireEventOnScope(eventName, listenerArgs);
     return true;
@@ -411,21 +422,19 @@ Scope.prototype.$broadcast = function(eventName) {
   return event;
 };
 
-Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
-  var event = { name: eventName };
+Scope.prototype.$$fireEventOnScope = function (eventName, listenerArgs) {
   var listeners = this.$$listeners[eventName] || [];
   var i = 0;
-  while(i < listeners.length) {
+  while (i < listeners.length) {
     if(listeners[i] === null) {
       listeners.splice(i, 1);
     } else {
-      try{
+      try {
         listeners[i].apply(null, listenerArgs);
-      } catch(e){
+      } catch (e) {
         console.error(e);
       }
       i++;
     }
   }
-  return event;
 };

@@ -2,16 +2,96 @@
 /* global publishExternalAPI: false, createInjector: false */
 'use strict';
 
-describe('$q', function() {
-  var $q;
+describe('$q', function () {
+  var $q, $rootScope;
 
-  beforeEach(function(){
+  beforeEach(function () {
     publishExternalAPI();
+    var injector = createInjector(['ng']);
     $q = createInjector(['ng']).get('$q');
+    $rootScope = injector.get('$rootScope');
   });
 
-  it('can create a Deferred', function() {
+  it('can create a Deferred', function () {
     var d = $q.defer();
     expect(d).toBeDefined();
+  });
+
+  it('has a promise for each Deferred', function () {
+    var d = $q.defer();
+    expect(d.promise).toBeDefined();
+  });
+
+  it('can resolve a promise', function (done) {
+    var deferred = $q.defer();
+    var promise = deferred.promise;
+    var promiseSpy = jasmine.createSpy();
+    promise.then(promiseSpy);
+
+    deferred.resolve('a-ok');
+    setTimeout(function () {
+      expect(promiseSpy).toHaveBeenCalledWith('a-ok');
+      done();
+    }, 0);
+  });
+
+  it('works when resolved before promise listener', function (done) {
+    var d = $q.defer();
+    d.resolve(42);
+
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    setTimeout(function () {
+      expect(promiseSpy).toHaveBeenCalledWith(42);
+      done();
+    }, 0);
+  });
+
+  it('does not resolve promise immediately', function () {
+    var d = $q.defer();
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    d.resolve(42);
+    expect(promiseSpy).not.toHaveBeenCalled();
+  });
+
+  it('resolves promise at next digest', function () {
+    var d = $q.defer();
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    d.resolve(42);
+    $rootScope.$apply();
+    setTimeout(function () {
+      expect(promiseSpy).toHaveBeenCalledWith(42);
+    }, 0);
+  });
+
+  it('may only by resolved once', function () {
+    var d = $q.defer();
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    d.resolve(42);
+    d.resolve(43);
+    $rootScope.$apply();
+    setTimeout(function () {
+      expect(promiseSpy.calls.count()).toEqual(1);
+      expect(promiseSpy).toHaveBeenCalledWith(42);
+    });
+  });
+
+  it('may only ever be resolved once', function () {
+    var d = $q.defer();
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    d.resolve(42);
+    $rootScope.$apply();
+    setTimeout(function () {
+      expect(promiseSpy).toHaveBeenCalledWith(42);
+      d.resolve(43);
+      $rootScope.$apply();
+      setTimeout(function () {
+        expect(promiseSpy.calls.count()).toEqual(1);
+      }, 0);
+    }, 0);
   });
 });

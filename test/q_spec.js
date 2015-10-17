@@ -227,4 +227,25 @@ describe('$q', function () {
       expect(rejectSpy).toHaveBeenCalled();
     }, 0);
   });
+
+  it('invokes a finally handler when fullfilled', function() {
+    var d = $q.defer();
+    var finallySpy = jasmine.createSpy();
+    d.promise.finally(finallySpy);
+    d.resolve(42);
+    $rootScope.$apply();
+    setTimeout(function(){
+      expect(finallySpy).toHaveBeenCalledWith();
+    });
+  });
+  it('invokes a finally handler when rejected', function() {
+    var d = $q.defer();
+    var finallySpy = jasmine.createSpy();
+    d.promise.finally(finallySpy);
+    d.reject('fail');
+    $rootScope.$apply();
+    setTimeout(function(){
+      expect(finallySpy).toHaveBeenCalledWith();
+    });
+  });
 });

@@ -95,19 +95,19 @@ describe('$q', function () {
     }, 0);
   });
 
-  it('resolves a listener added after resolution', function() {
+  it('resolves a listener added after resolution', function () {
     var d = $q.defer();
     d.resolve(42);
     $rootScope.$apply();
     var promiseSpy = jasmine.createSpy();
     d.promise.then(promiseSpy);
     $rootScope.$apply();
-    setTimeout(function() {
+    setTimeout(function () {
       expect(promiseSpy).toHaveBeenCalledWith(42);
     }, 0);
   });
 
-  it('may have multiple callbacks', function() {
+  it('may have multiple callbacks', function () {
     var d = $q.defer();
     var firstSpy = jasmine.createSpy();
     var secondSpy = jasmine.createSpy();
@@ -115,20 +115,20 @@ describe('$q', function () {
     d.promise.then(secondSpy);
     d.resolve(42);
     $rootScope.$apply();
-    setTimeout(function() {
+    setTimeout(function () {
       expect(firstSpy).toHaveBeenCalledWith(42);
       expect(secondSpy).toHaveBeenCalledWith(42);
     }, 0);
   });
 
-  it('invoke callbacks once', function() {
+  it('invoke callbacks once', function () {
     var d = $q.defer();
     var firstSpy = jasmine.createSpy();
     var secondSpy = jasmine.createSpy();
     d.promise.then(firstSpy);
     d.resolve(42);
     $rootScope.$apply();
-    setTimeout(function() {
+    setTimeout(function () {
       expect(firstSpy.calls.count()).toBe(1);
       expect(secondSpy.calls.count()).toBe(0);
 
@@ -137,12 +137,94 @@ describe('$q', function () {
       expect(secondSpy.calls.count()).toBe(0);
 
       $rootScope.$apply();
-      setTimeout(function() {
+      setTimeout(function () {
         expect(firstSpy.calls.count()).toBe(1);
         expect(secondSpy.calls.count()).toBe(1);
       }, 0);
 
     }, 0);
+  });
 
+  it('can reject a deferred', function () {
+    var d = $q.defer();
+    var fullFillSpy = jasmine.createSpy();
+    var rejectSpy = jasmine.createSpy();
+    d.promise.then(fullFillSpy, rejectSpy);
+    d.reject('fail');
+    $rootScope.$apply();
+
+    setTimeout(function () {
+      expect(fullFillSpy).not.toHaveBeenCalled();
+      expect(rejectSpy).toHaveBeenCalledWith('fail');
+    }, 0);
+  });
+
+  it('can reject just once', function () {
+    var d = $q.defer();
+    var rejectSpy = jasmine.createSpy();
+    d.promise.then(null, rejectSpy);
+    d.reject('fail');
+    $rootScope.$apply();
+    setTimeout(function () {
+      expect(rejectSpy.calls.count()).toBe(1);
+    }, 0);
+    d.reject('fail again');
+    $rootScope.$apply();
+    setTimeout(function () {
+      expect(rejectSpy.calls.count()).toBe(1);
+    }, 0);
+  });
+
+  it('cannot fullfill a promise once rejected', function () {
+    var d = $q.defer();
+    var rejectSpy = jasmine.createSpy();
+    var fullfillSpy = jasmine.createSpy();
+    d.promise.then(fullfillSpy, rejectSpy);
+
+    d.reject('fail');
+    $rootScope.$apply();
+    d.resolve('success');
+    $rootScope.$apply();
+
+    setTimeout(function () {
+      expect(fullfillSpy).not.toHaveBeenCalled();
+    }, 0);
+  });
+
+  it('does not require a failure handler each time', function() {
+    var d = $q.defer();
+    var fullfilledSpy = jasmine.createSpy();
+    var rejectedSpy = jasmine.createSpy();
+    d.promise.then(fullfilledSpy);
+    d.promise.then(null, rejectedSpy);
+    d.reject('fail');
+    $rootScope.$apply();
+    setTimeout(function() {
+      expect(rejectedSpy).toHaveBeenCalledWith('fail');
+    }, 0);
+  });
+
+  it('does not require a failure handler each time', function() {
+    var d = $q.defer();
+    var fullfilledSpy = jasmine.createSpy();
+    var rejectedSpy = jasmine.createSpy();
+    d.promise.then(fullfilledSpy);
+    d.promise.then(null, rejectedSpy);
+    d.resolve('ok');
+    $rootScope.$apply();
+    setTimeout(function() {
+      expect(fullfilledSpy).toHaveBeenCalledWith('ok');
+    }, 0);
+  });
+
+  it('can register rejection handler with catch', function() {
+    var d = $q.defer();
+    var rejectSpy = jasmine.createSpy();
+    d.promise.catch(rejectSpy);
+    d.reject('fail');
+    $rootScope.$apply();
+    setTimeout(function() {
+      expect(rejectSpy).toHaveBeenCalled();
+    }, 0);
   });
 });

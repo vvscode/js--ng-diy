@@ -6,18 +6,18 @@ function $QProvider() {
     function processQueue(state) {
       var pending = state.pending;
       delete state.pending;
-      _.forEach(pending, function(handlers) {
+      _.forEach(pending, function (handlers) {
         var deferred = handlers[0];
         var fn = handlers[state.status];
         try {
           if(_.isFunction(fn)) {
             deferred.resolve(fn(state.value));
-          } else if (state.status === 1) {
+          } else if(state.status === 1) {
             deferred.resolve(state.value);
           } else {
             deferred.reject(state.value);
           }
-        } catch(e) {
+        } catch (e) {
           deferred.reject(e);
         }
       });
@@ -43,14 +43,14 @@ function $QProvider() {
       return result.promise;
     };
 
-    Promise.prototype.catch = function(onReject) {
+    Promise.prototype.catch = function (onReject) {
       return this.then(null, onReject);
     };
 
-    Promise.prototype.finally = function(callback) {
-      return this.then(function() {
+    Promise.prototype.finally = function (callback) {
+      return this.then(function () {
         callback();
-      }, function() {
+      }, function () {
         callback();
       });
     };
@@ -59,16 +59,22 @@ function $QProvider() {
       this.promise = new Promise();
     }
 
-    Defered.prototype.resolve = function (v) {
+    Defered.prototype.resolve = function (value) {
       if(this.promise.$$state.status) {
         return;
       }
-      this.promise.$$state.value = v;
-      this.promise.$$state.status = 1;
-      scheduleProcessQueue(this.promise.$$state);
+      if(value && _.isFunction(value.then)) {
+        value.then(
+          _.bind(this.resolve, this),
+          _.bind(this.reject, this));
+      } else {
+        this.promise.$$state.value = value;
+        this.promise.$$state.status = 1;
+        scheduleProcessQueue(this.promise.$$state);
+      }
     };
 
-    Defered.prototype.reject = function(reason) {
+    Defered.prototype.reject = function (reason) {
       if(this.promise.$$state.status) {
         return;
       }

@@ -29,6 +29,13 @@ function $QProvider() {
       });
     }
 
+
+    function reject(rejection) {
+      var d = defer();
+      d.reject(rejection);
+      return d.promise;
+    }
+
     function makePromise(value, resolved) {
       var d = new Deferred();
       if(resolved) {
@@ -123,7 +130,8 @@ function $QProvider() {
     }
 
     return {
-      defer: defer
+      defer: defer,
+      reject: reject
     };
 
   }];

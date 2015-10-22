@@ -46,6 +46,12 @@ function $QProvider() {
       return d.promise;
     }
 
+    function when(value, callback, errback, progressback) {
+      var d = defer();
+      d.resolve(value);
+      return d.promise.then(callback, errback, progressback);
+    }
+
     function handleFinallyCallback(callback, value, resolved) {
       var callbackValue = callback();
       if(callbackValue && callbackValue.then) {
@@ -131,7 +137,8 @@ function $QProvider() {
 
     return {
       defer: defer,
-      reject: reject
+      reject: reject,
+      when: when
     };
 
   }];

@@ -132,10 +132,8 @@ describe('$http', function () {
       url: 'http://teropa.info'
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders.Accept).toBe(
-      'application/json, text/plain, */*');
+    expect(requests[0].requestHeaders.Accept).toBe('application/json, text/plain, */*');
   });
-
 
   it('sets method-specific default headers on request', function () {
     $http({
@@ -144,8 +142,7 @@ describe('$http', function () {
       data: '42'
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders['Content-Type']).toBe(
-      'application/json;charset=utf-8');
+    expect(requests[0].requestHeaders['Content-Type']).toBe('application/json;charset=utf-8');
   });
 
   it('exposes default headers for overriding', function () {
@@ -156,24 +153,22 @@ describe('$http', function () {
       data: '42'
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders['Content-Type']).toBe(
-      'text/plain;charset=utf-8');
+    expect(requests[0].requestHeaders['Content-Type']).toBe('text/plain;charset=utf-8');
   });
 
   it('exposes default headers through provider', function () {
     var injector = createInjector(['ng', function ($httpProvider) {
-      $httpProvider.defaults.headers.post['Content-Type'] =
-        'text/plain;charset=utf-8';
+      $httpProvider.defaults.headers.post['Content-Type'] = 'text/plain;charset=utf-8';
     }]);
     $http = injector.get('$http');
+
     $http({
       method: 'POST',
       url: 'http://teropa.info',
       data: '42'
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders['Content-Type']).toBe(
-      'text/plain;charset=utf-8');
+    expect(requests[0].requestHeaders['Content-Type']).toBe('text/plain;charset=utf-8');
   });
 
   it('merges default headers case-insensitively', function () {
@@ -186,8 +181,7 @@ describe('$http', function () {
       }
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders['content-type']).toBe(
-      'text/plain;charset=utf-8');
+    expect(requests[0].requestHeaders['content-type']).toBe('text/plain;charset=utf-8');
     expect(requests[0].requestHeaders['Content-Type']).toBeUndefined();
   });
 
@@ -200,32 +194,35 @@ describe('$http', function () {
       }
     });
     expect(requests.length).toBe(1);
-    expect(requests[0].requestHeaders['Content-Type']).not.toBe(
-      'application/json;charset=utf-8');
+    expect(requests[0].requestHeaders['Content-Type']).not.toBe('application/json;charset=utf-8');
   });
 
   it('supports functions as header values', function () {
-    var contentTypeSpy = jasmine.createSpy().and.returnValue(
-      'text/plain;charset=utf-8');
+    var contentTypeSpy = jasmine.createSpy().and.returnValue('text/plain;charset=utf-8');
     $http.defaults.headers.post['Content-Type'] = contentTypeSpy;
+
     var request = {
       method: 'POST',
-      url: 'http://teropa.info', data: 42
+      url: 'http://teropa.info',
+      data: 42
     };
     $http(request);
+
     expect(contentTypeSpy).toHaveBeenCalledWith(request);
-    expect(requests[0].requestHeaders['Content-Type']).toBe(
-      'text/plain;charset=utf-8');
+    expect(requests[0].requestHeaders['Content-Type']).toBe('text/plain;charset=utf-8');
   });
 
   it('ignores header function value when null/undefined', function () {
     var cacheControlSpy = jasmine.createSpy().and.returnValue(null);
     $http.defaults.headers.post['Cache-Control'] = cacheControlSpy;
+
     var request = {
       method: 'POST',
-      url: 'http://teropa.info', data: 42
+      url: 'http://teropa.info',
+      data: 42
     };
     $http(request);
+
     expect(cacheControlSpy).toHaveBeenCalledWith(request);
     expect(requests[0].requestHeaders['Cache-Control']).toBeUndefined();
   });
@@ -239,7 +236,9 @@ describe('$http', function () {
     }).then(function (r) {
       response = r;
     });
+
     requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello');
+
     expect(response.headers).toBeDefined();
     expect(response.headers instanceof Function).toBe(true);
     expect(response.headers('Content-Type')).toBe('text/plain');
@@ -255,10 +254,11 @@ describe('$http', function () {
     }).then(function (r) {
       response = r;
     });
+
     requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello');
+
     expect(response.headers()).toEqual({'content-type': 'text/plain'});
   });
-
 
   it('allows setting withCredentials', function () {
     $http({
@@ -267,16 +267,153 @@ describe('$http', function () {
       data: 42,
       withCredentials: true
     });
+
     expect(requests[0].withCredentials).toBe(true);
   });
 
   it('allows setting withCredentials from defaults', function () {
     $http.defaults.withCredentials = true;
+
     $http({
       method: 'POST',
       url: 'http://teropa.info',
       data: 42
     });
+
     expect(requests[0].withCredentials).toBe(true);
   });
+
+  it('allows transforming requests with functions', function () {
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      transformRequest: function (data) {
+        return '*' + data + '*';
+      }
+    });
+
+    expect(requests[0].requestBody).toBe('*42*');
+  });
+
+  it('allows multiple request transform functions', function () {
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      transformRequest: [function (data) {
+        return '*' + data + '*';
+      }, function (data) {
+        return '-' + data + '-';
+      }]
+    });
+
+    expect(requests[0].requestBody).toBe('-*42*-');
+  });
+
+  it('allows settings transforms in defaults', function () {
+    $http.defaults.transformRequest = [function (data) {
+      return '*' + data + '*';
+    }];
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42
+    });
+
+    expect(requests[0].requestBody).toBe('*42*');
+  });
+
+  it('passes request headers getter to transforms', function () {
+    $http.defaults.transformRequest = [function (data, headers) {
+      if(headers('Content-Type') === 'text/emphasized') {
+        return '*' + data + '*';
+      } else {
+        return data;
+      }
+    }];
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      headers: {
+        'content-type': 'text/emphasized'
+      }
+    });
+
+    expect(requests[0].requestBody).toBe('*42*');
+  });
+
+  it('allows transforming responses with functions', function () {
+    var response;
+    $http({
+      url: 'http://teropa.info',
+      transformResponse: function (data) {
+        return '*' + data + '*';
+      }
+    }).then(function (r) {
+      response = r;
+    });
+
+    requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello');
+
+    expect(response.data).toEqual('*Hello*');
+  });
+
+  it('passes response headers to transform functions', function () {
+    var response;
+    $http({
+      url: 'http://teropa.info',
+      transformResponse: function (data, headers) {
+        if(headers('content-type') === 'text/decorated') {
+          return '*' + data + '*';
+        } else {
+          return data;
+        }
+      }
+    }).then(function (r) {
+      response = r;
+    });
+
+    requests[0].respond(200, {'Content-Type': 'text/decorated'}, 'Hello');
+
+    expect(response.data).toEqual('*Hello*');
+  });
+
+  it('transforms error responses also', function () {
+    var response;
+    $http({
+      url: 'http://teropa.info',
+      transformResponse: function (data) {
+        return '*' + data + '*';
+      }
+    }).catch(function (r) {
+      response = r;
+    });
+
+    requests[0].respond(401, {'Content-Type': 'text/plain'}, 'Fail');
+
+    expect(response.data).toEqual('*Fail*');
+  });
+
+  it('passes HTTP status to response transformers', function () {
+    var response;
+    $http({
+      url: 'http://teropa.info',
+      transformResponse: function (data, headers, status) {
+        if(status === 401) {
+          return 'unauthorized';
+        } else {
+          return data;
+        }
+      }
+    }).catch(function (r) {
+      response = r;
+    });
+
+    requests[0].respond(401, {'Content-Type': 'text/plain'}, 'Fail');
+
+    expect(response.data).toEqual('unauthorized');
+  });
+
 });

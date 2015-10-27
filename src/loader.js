@@ -2,22 +2,22 @@
 'use strict';
 
 function setupModuleLoader(window) {
-  var ensure = function (obj, name, factory) {
+  var ensure = function(obj, name, factory) {
     return obj[name] || (obj[name] = factory());
   };
 
   var angular = ensure(window, 'angular', Object);
 
-  var createModule = function (name, requires, modules, configFn) {
-    if(name === 'hasOwnProperty') {
+  var createModule = function(name, requires, modules, configFn) {
+    if (name === 'hasOwnProperty') {
       throw 'hasOwnProperty is not a valid module name';
     }
 
     var invokeQueue = [];
     var configBlocks = [];
 
-    var invokeLater = function (service, method, arrayMethod, queue) {
-      return function () {
+    var invokeLater = function(service, method, arrayMethod, queue) {
+      return function() {
         queue = queue || invokeQueue;
         queue[arrayMethod || 'push']([service, method, arguments]);
         return moduleInstance;
@@ -32,10 +32,11 @@ function setupModuleLoader(window) {
       factory: invokeLater('$provide', 'factory'),
       value: invokeLater('$provide', 'value'),
       service: invokeLater('$provide', 'service'),
+      directive: invokeLater('$compileProvider', 'directive'),
       decorator: invokeLater('$provide', 'decorator'),
       filter: invokeLater('$filterProvider', 'register'),
       config: invokeLater('$injector', 'invoke', 'push', configBlocks),
-      run: function (fn) {
+      run: function(fn) {
         moduleInstance._runBlocks.push(fn);
         return moduleInstance;
       },
@@ -44,7 +45,7 @@ function setupModuleLoader(window) {
       _runBlocks: []
     };
 
-    if(configFn) {
+    if (configFn) {
       moduleInstance.config(configFn);
     }
 
@@ -52,18 +53,18 @@ function setupModuleLoader(window) {
     return moduleInstance;
   };
 
-  var getModule = function (name, modules) {
-    if(modules.hasOwnProperty(name)) {
+  var getModule = function(name, modules) {
+    if (modules.hasOwnProperty(name)) {
       return modules[name];
     } else {
       throw 'Module ' + name + ' is not available!';
     }
   };
 
-  ensure(angular, 'module', function () {
+  ensure(angular, 'module', function() {
     var modules = {};
-    return function (name, requires, configFn) {
-      if(requires) {
+    return function(name, requires, configFn) {
+      if (requires) {
         return createModule(name, requires, modules, configFn);
       } else {
         return getModule(name, modules);

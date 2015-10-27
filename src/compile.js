@@ -5,6 +5,8 @@ function nodeName(element) {
   return element.nodeName ? element.nodeName : element[0].nodeName;
 }
 function $CompileProvider($provide) {
+  var PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i;
+
   var hasDirectives = {};
   this.directive = function(name, directiveFactory) {
     if (_.isString(name)) {
@@ -40,9 +42,13 @@ function $CompileProvider($provide) {
       });
     }
 
+    function directiveNormalize(name) {
+      return _.camelCase(name.replace(PREFIX_REGEXP, ''));
+    }
+
     function collectDirectives(node) {
       var directives = [];
-      var normalizedNodeName = _.camelCase(nodeName(node).toLowerCase());
+      var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
       addDirective(directives, normalizedNodeName);
       return directives;
     }

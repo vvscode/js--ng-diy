@@ -497,22 +497,6 @@ describe('$http', function () {
     expect(requests[0].requestBody).toBe('[1,"two",3]');
   });
 
-  it('does not serialize blobs for requests', function () {
-    var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder ||
-      window.MozBlobBuilder || window.MSBlobBuilder;
-    var bb = new BlobBuilder();
-    bb.append('hello');
-    var blob = bb.getBlob('text/plain');
-    $http({
-      method: 'POST',
-      url: 'http://teropa.info',
-      data: blob
-    });
-    $rootScope.$apply();
-
-    expect(requests[0].requestBody).toBe(blob);
-  });
-
   it('does not serialize form data for requests', function () {
     var formData = new FormData();
     formData.append('aField', 'aValue');

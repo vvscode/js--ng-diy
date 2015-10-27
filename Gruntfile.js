@@ -22,6 +22,7 @@ module.exports = function (grunt) {
             'node_modules/sinon/pkg/sinon.js',
             'node_modules/lodash/index.js',
             'node_modules/sinon/pkg/sinon.js',
+            'node_modules/jquery/dist/jquery.js',
             'src/**/*.js',
             'test/**/*.js'
           ],

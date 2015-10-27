@@ -59,6 +59,10 @@ function $CompileProvider($provide) {
         }
         addDirective(directives, normalizedAttr);
       });
+      _.forEach(node.classList, function(cls) {
+        var normalizedClassName = directiveNormalize(cls);
+        addDirective(directives, normalizedClassName);
+      });
       return directives;
     }
 

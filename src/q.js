@@ -6,13 +6,13 @@ function qFactory(callLater) {
   function processQueue(state) {
     var pending = state.pending;
     delete state.pending;
-    _.forEach(pending, function (handlers) {
+    _.forEach(pending, function(handlers) {
       var deferred = handlers[0];
       var fn = handlers[state.status];
       try {
-        if(_.isFunction(fn)) {
+        if (_.isFunction(fn)) {
           deferred.resolve(fn(state.value));
-        } else if(state.status === 1) {
+        } else if (state.status === 1) {
           deferred.resolve(state.value);
         } else {
           deferred.reject(state.value);
@@ -24,14 +24,14 @@ function qFactory(callLater) {
   }
 
   function scheduleProcessQueue(state) {
-    callLater(function () {
+    callLater(function() {
       processQueue(state);
     });
   }
 
   function makePromise(value, resolved) {
     var d = new Deferred();
-    if(resolved) {
+    if (resolved) {
       d.resolve(value);
     } else {
       d.reject(value);
@@ -41,8 +41,8 @@ function qFactory(callLater) {
 
   function handleFinallyCallback(callback, value, resolved) {
     var callbackValue = callback();
-    if(callbackValue && callbackValue.then) {
-      return callbackValue.then(function () {
+    if (callbackValue && callbackValue.then) {
+      return callbackValue.then(function() {
         return makePromise(value, resolved);
       });
     } else {
@@ -54,22 +54,22 @@ function qFactory(callLater) {
     this.$$state = {};
   }
 
-  Promise.prototype.then = function (onFulfilled, onRejected, onProgress) {
+  Promise.prototype.then = function(onFulfilled, onRejected, onProgress) {
     var result = new Deferred();
     this.$$state.pending = this.$$state.pending || [];
     this.$$state.pending.push([result, onFulfilled, onRejected, onProgress]);
-    if(this.$$state.status > 0) {
+    if (this.$$state.status > 0) {
       scheduleProcessQueue(this.$$state);
     }
     return result.promise;
   };
-  Promise.prototype.catch = function (onRejected) {
+  Promise.prototype.catch = function(onRejected) {
     return this.then(null, onRejected);
   };
-  Promise.prototype.finally = function (callback, progressBack) {
-    return this.then(function (value) {
+  Promise.prototype.finally = function(callback, progressBack) {
+    return this.then(function(value) {
       return handleFinallyCallback(callback, value, true);
-    }, function (rejection) {
+    }, function(rejection) {
       return handleFinallyCallback(callback, rejection, false);
     }, progressBack);
   };
@@ -78,11 +78,11 @@ function qFactory(callLater) {
     this.promise = new Promise();
   }
 
-  Deferred.prototype.resolve = function (value) {
-    if(this.promise.$$state.status) {
+  Deferred.prototype.resolve = function(value) {
+    if (this.promise.$$state.status) {
       return;
     }
-    if(value && _.isFunction(value.then)) {
+    if (value && _.isFunction(value.then)) {
       value.then(
         _.bind(this.resolve, this),
         _.bind(this.reject, this),
@@ -94,19 +94,19 @@ function qFactory(callLater) {
       scheduleProcessQueue(this.promise.$$state);
     }
   };
-  Deferred.prototype.reject = function (reason) {
-    if(this.promise.$$state.status) {
+  Deferred.prototype.reject = function(reason) {
+    if (this.promise.$$state.status) {
       return;
     }
     this.promise.$$state.value = reason;
     this.promise.$$state.status = 2;
     scheduleProcessQueue(this.promise.$$state);
   };
-  Deferred.prototype.notify = function (progress) {
+  Deferred.prototype.notify = function(progress) {
     var pending = this.promise.$$state.pending;
-    if(pending && pending.length && !this.promise.$$state.status) {
-      callLater(function () {
-        _.forEach(pending, function (handlers) {
+    if (pending && pending.length && !this.promise.$$state.status) {
+      callLater(function() {
+        _.forEach(pending, function(handlers) {
           var deferred = handlers[0];
           var progressBack = handlers[3];
           try {
@@ -142,26 +142,26 @@ function qFactory(callLater) {
     var results = _.isArray(promises) ? [] : {};
     var counter = 0;
     var d = defer();
-    _.forEach(promises, function (promise, index) {
+    _.forEach(promises, function(promise, index) {
       counter++;
-      when(promise).then(function (value) {
+      when(promise).then(function(value) {
         results[index] = value;
         counter--;
-        if(!counter) {
+        if (!counter) {
           d.resolve(results);
         }
-      }, function (rejection) {
+      }, function(rejection) {
         d.reject(rejection);
       });
     });
-    if(!counter) {
+    if (!counter) {
       d.resolve(results);
     }
     return d.promise;
   }
 
   var $Q = function Q(resolver) {
-    if(!_.isFunction(resolver)) {
+    if (!_.isFunction(resolver)) {
       throw 'Expected function, got ' + resolver;
     }
     var d = defer();
@@ -183,16 +183,16 @@ function qFactory(callLater) {
 }
 
 function $QProvider() {
-  this.$get = ['$rootScope', function ($rootScope) {
-    return qFactory(function (callback) {
+  this.$get = ['$rootScope', function($rootScope) {
+    return qFactory(function(callback) {
       $rootScope.$evalAsync(callback);
     });
   }];
 }
 
 function $$QProvider() {
-  this.$get = function () {
-    return qFactory(function (callback) {
+  this.$get = function() {
+    return qFactory(function(callback) {
       setTimeout(callback, 0);
     });
   };

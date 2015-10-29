@@ -2,36 +2,36 @@
 /* global angular: false, publishExternalAPI: false, createInjector: false */
 'use strict';
 
-describe("filter", function () {
+describe("filter", function() {
 
-  beforeEach(function () {
+  beforeEach(function() {
     publishExternalAPI();
   });
 
-  it('can be registered and obtained', function () {
-    var myFilter = function () {
+  it('can be registered and obtained', function() {
+    var myFilter = function() {
     };
-    var myFilterFactory = function () {
+    var myFilterFactory = function() {
       return myFilter;
     };
-    var injector = createInjector(['ng', function ($filterProvider) {
+    var injector = createInjector(['ng', function($filterProvider) {
       $filterProvider.register('my', myFilterFactory);
     }]);
     var $filter = injector.get('$filter');
     expect($filter('my')).toBe(myFilter);
   });
 
-  it('allows registering multiple filters with an object', function () {
-    var myFilter = function () {
+  it('allows registering multiple filters with an object', function() {
+    var myFilter = function() {
     };
-    var myOtherFilter = function () {
+    var myOtherFilter = function() {
     };
-    var injector = createInjector(['ng', function ($filterProvider) {
+    var injector = createInjector(['ng', function($filterProvider) {
       $filterProvider.register({
-        my: function () {
+        my: function() {
           return myFilter;
         },
-        myOther: function () {
+        myOther: function() {
           return myOtherFilter;
         }
       });
@@ -42,11 +42,11 @@ describe("filter", function () {
     expect($filter('myOther')).toBe(myOtherFilter);
   });
 
-  it('is available through injector', function () {
-    var myFilter = function () {
+  it('is available through injector', function() {
+    var myFilter = function() {
     };
-    var injector = createInjector(['ng', function ($filterProvider) {
-      $filterProvider.register('my', function () {
+    var injector = createInjector(['ng', function($filterProvider) {
+      $filterProvider.register('my', function() {
         return myFilter;
       });
     }]);
@@ -54,11 +54,11 @@ describe("filter", function () {
     expect(injector.get('myFilter')).toBe(myFilter);
   });
 
-  it('may have dependencies in factory', function () {
-    var injector = createInjector(['ng', function ($provide, $filterProvider) {
+  it('may have dependencies in factory', function() {
+    var injector = createInjector(['ng', function($provide, $filterProvider) {
       $provide.constant('suffix', '!');
-      $filterProvider.register('my', function (suffix) {
-        return function (v) {
+      $filterProvider.register('my', function(suffix) {
+        return function(v) {
           return suffix + v;
         };
       });
@@ -66,11 +66,11 @@ describe("filter", function () {
     expect(injector.has('myFilter')).toBe(true);
   });
 
-  it('can be registered through module API', function () {
-    var myFilter = function () {
+  it('can be registered through module API', function() {
+    var myFilter = function() {
     };
     var module = angular.module('myModule', [])
-      .filter('my', function () {
+      .filter('my', function() {
         return myFilter;
       });
     var injector = createInjector(['ng', 'myModule']);

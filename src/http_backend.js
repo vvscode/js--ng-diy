@@ -3,20 +3,20 @@
 
 function $HttpBackendProvider() {
 
-  this.$get = function () {
-    return function (method, url, post, callback, headers, timeout, withCredentials) {
+  this.$get = function() {
+    return function(method, url, post, callback, headers, timeout, withCredentials) {
       var xhr = new window.XMLHttpRequest();
       var timeoutId;
       xhr.open(method, url, true);
-      _.forEach(headers, function (value, key) {
+      _.forEach(headers, function(value, key) {
         xhr.setRequestHeader(key, value);
       });
-      if(withCredentials) {
+      if (withCredentials) {
         xhr.withCredentials = true;
       }
       xhr.send(post || null);
-      xhr.onload = function () {
-        if(!_.isUndefined(timeoutId)) {
+      xhr.onload = function() {
+        if (!_.isUndefined(timeoutId)) {
           clearTimeout(timeoutId);
         }
         var response = ('response' in xhr) ? xhr.response :
@@ -29,18 +29,18 @@ function $HttpBackendProvider() {
           statusText
         );
       };
-      xhr.onerror = function () {
-        if(!_.isUndefined(timeoutId)) {
+      xhr.onerror = function() {
+        if (!_.isUndefined(timeoutId)) {
           clearTimeout(timeoutId);
         }
         callback(-1, null, '');
       };
-      if(timeout && timeout.then) {
-        timeout.then(function () {
+      if (timeout && timeout.then) {
+        timeout.then(function() {
           xhr.abort();
         });
-      } else if(timeout > 0) {
-        timeoutId = setTimeout(function () {
+      } else if (timeout > 0) {
+        timeoutId = setTimeout(function() {
           xhr.abort();
         }, timeout);
       }

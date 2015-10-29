@@ -16,17 +16,17 @@ function isFormData(object) {
 }
 
 function isJsonLike(data) {
-  if(data.match(/^\{(?!\{)/)) {
+  if (data.match(/^\{(?!\{)/)) {
     return data.match(/\}$/);
-  } else if(data.match(/^\[/)) {
+  } else if (data.match(/^\[/)) {
     return data.match(/\]$/);
   }
 }
 
 function defaultHttpResponseTransform(data, headers) {
-  if(_.isString(data)) {
+  if (_.isString(data)) {
     var contentType = headers('Content-Type');
-    if((contentType && contentType.indexOf('application/json') === 0) ||
+    if ((contentType && contentType.indexOf('application/json') === 0) ||
       isJsonLike(data)) {
       return JSON.parse(data);
     }
@@ -35,18 +35,18 @@ function defaultHttpResponseTransform(data, headers) {
 }
 
 function $HttpParamSerializerProvider() {
-  this.$get = function () {
+  this.$get = function() {
     return function serializeParams(params) {
       var parts = [];
-      _.forEach(params, function (value, key) {
-        if(_.isNull(value) || _.isUndefined(value)) {
+      _.forEach(params, function(value, key) {
+        if (_.isNull(value) || _.isUndefined(value)) {
           return;
         }
-        if(!_.isArray(value)) {
+        if (!_.isArray(value)) {
           value = [value];
         }
-        _.forEach(value, function (v) {
-          if(_.isObject(v)) {
+        _.forEach(value, function(v) {
+          if (_.isObject(v)) {
             v = JSON.stringify(v);
           }
           parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(v));
@@ -58,20 +58,20 @@ function $HttpParamSerializerProvider() {
 }
 
 function $HttpParamSerializerJQLikeProvider() {
-  this.$get = function () {
-    return function (params) {
+  this.$get = function() {
+    return function(params) {
       var parts = [];
 
       function serialize(value, prefix, topLevel) {
-        if(_.isNull(value) || _.isUndefined(value)) {
+        if (_.isNull(value) || _.isUndefined(value)) {
           return;
         }
-        if(_.isArray(value)) {
-          _.forEach(value, function (v, i) {
+        if (_.isArray(value)) {
+          _.forEach(value, function(v, i) {
             serialize(v, prefix + '[' + (_.isObject(v) ? i : '') + ']');
           });
-        } else if(_.isObject(value)) {
-          _.forEach(value, function (v, k) {
+        } else if (_.isObject(value)) {
+          _.forEach(value, function(v, k) {
             serialize(v, prefix +
               (topLevel ? '' : '[') +
               k +
@@ -90,7 +90,7 @@ function $HttpParamSerializerJQLikeProvider() {
 }
 
 function buildUrl(url, serializedParams) {
-  if(serializedParams.length) {
+  if (serializedParams.length) {
     url += (url.indexOf('?') === -1) ? '?' : '&';
     url += serializedParams;
   }
@@ -102,8 +102,8 @@ function $HttpProvider() {
   var interceptorFactories = this.interceptors = [];
 
   var useApplyAsync = false;
-  this.useApplyAsync = function (value) {
-    if(_.isUndefined(value)) {
+  this.useApplyAsync = function(value) {
+    if (_.isUndefined(value)) {
       return useApplyAsync;
     } else {
       useApplyAsync = !!value;
@@ -126,8 +126,8 @@ function $HttpProvider() {
         'Content-Type': 'application/json;charset=utf-8'
       }
     },
-    transformRequest: [function (data) {
-      if(_.isObject(data) && !isBlob(data) && !isFile(data) && !isFormData(data)) {
+    transformRequest: [function(data) {
+      if (_.isObject(data) && !isBlob(data) && !isFile(data) && !isFormData(data)) {
         return JSON.stringify(data);
       } else {
         return data;
@@ -138,10 +138,10 @@ function $HttpProvider() {
   };
 
   function executeHeaderFns(headers, config) {
-    return _.transform(headers, function (result, v, k) {
-      if(_.isFunction(v)) {
+    return _.transform(headers, function(result, v, k) {
+      if (_.isFunction(v)) {
         v = v(config);
-        if(_.isNull(v) || _.isUndefined(v)) {
+        if (_.isNull(v) || _.isUndefined(v)) {
           delete result[k];
         } else {
           result[k] = v;
@@ -160,11 +160,11 @@ function $HttpProvider() {
       defaults.headers.common,
       defaults.headers[(config.method || 'get').toLowerCase()]
     );
-    _.forEach(defHeaders, function (value, key) {
-      var headerExists = _.any(reqHeaders, function (v, k) {
+    _.forEach(defHeaders, function(value, key) {
+      var headerExists = _.any(reqHeaders, function(v, k) {
         return k.toLowerCase() === key.toLowerCase();
       });
-      if(!headerExists) {
+      if (!headerExists) {
         reqHeaders[key] = value;
       }
     });
@@ -172,17 +172,17 @@ function $HttpProvider() {
   }
 
   function parseHeaders(headers) {
-    if(_.isObject(headers)) {
-      return _.transform(headers, function (result, v, k) {
+    if (_.isObject(headers)) {
+      return _.transform(headers, function(result, v, k) {
         result[_.trim(k.toLowerCase())] = _.trim(v);
       }, {});
     } else {
       var lines = headers.split('\n');
-      return _.transform(lines, function (result, line) {
+      return _.transform(lines, function(result, line) {
         var separatorAt = line.indexOf(':');
         var name = _.trim(line.substr(0, separatorAt)).toLowerCase();
         var value = _.trim(line.substr(separatorAt + 1));
-        if(name) {
+        if (name) {
           result[name] = value;
         }
       }, {});
@@ -191,9 +191,9 @@ function $HttpProvider() {
 
   function headersGetter(headers) {
     var headersObj;
-    return function (name) {
+    return function(name) {
       headersObj = headersObj || parseHeaders(headers);
-      if(name) {
+      if (name) {
         return headersObj[name.toLowerCase()];
       } else {
         return headersObj;
@@ -202,19 +202,19 @@ function $HttpProvider() {
   }
 
   function transformData(data, headers, status, transform) {
-    if(_.isFunction(transform)) {
+    if (_.isFunction(transform)) {
       return transform(data, headers, status);
     } else {
-      return _.reduce(transform, function (data, fn) {
+      return _.reduce(transform, function(data, fn) {
         return fn(data, headers, status);
       }, data);
     }
   }
 
   this.$get = ['$httpBackend', '$q', '$rootScope', '$injector',
-    function ($httpBackend, $q, $rootScope, $injector) {
+    function($httpBackend, $q, $rootScope, $injector) {
 
-      var interceptors = _.map(interceptorFactories, function (fn) {
+      var interceptors = _.map(interceptorFactories, function(fn) {
         return _.isString(fn) ? $injector.get(fn) :
           $injector.invoke(fn);
       });
@@ -222,9 +222,9 @@ function $HttpProvider() {
       function sendReq(config, reqData) {
         var deferred = $q.defer();
         $http.pendingRequests.push(config);
-        deferred.promise.then(function () {
+        deferred.promise.then(function() {
           _.remove($http.pendingRequests, config);
-        }, function () {
+        }, function() {
           _.remove($http.pendingRequests, config);
         });
 
@@ -240,11 +240,11 @@ function $HttpProvider() {
             });
           }
 
-          if(useApplyAsync) {
+          if (useApplyAsync) {
             $rootScope.$applyAsync(resolvePromise);
           } else {
             resolvePromise();
-            if(!$rootScope.$$phase) {
+            if (!$rootScope.$$phase) {
               $rootScope.$apply();
             }
           }
@@ -267,7 +267,7 @@ function $HttpProvider() {
 
 
       function serverRequest(config) {
-        if(_.isUndefined(config.withCredentials) && !_.isUndefined(defaults.withCredentials)) {
+        if (_.isUndefined(config.withCredentials) && !_.isUndefined(defaults.withCredentials)) {
           config.withCredentials = defaults.withCredentials;
         }
 
@@ -278,16 +278,16 @@ function $HttpProvider() {
           config.transformRequest
         );
 
-        if(_.isUndefined(reqData)) {
-          _.forEach(config.headers, function (v, k) {
-            if(k.toLowerCase() === 'content-type') {
+        if (_.isUndefined(reqData)) {
+          _.forEach(config.headers, function(v, k) {
+            if (k.toLowerCase() === 'content-type') {
               delete config.headers[k];
             }
           });
         }
 
         function transformResponse(response) {
-          if(response.data) {
+          if (response.data) {
             response.data = transformData(
               response.data,
               response.headers,
@@ -295,7 +295,7 @@ function $HttpProvider() {
               config.transformResponse
             );
           }
-          if(isSuccess(response.status)) {
+          if (isSuccess(response.status)) {
             return response;
           } else {
             return $q.reject(response);
@@ -313,27 +313,27 @@ function $HttpProvider() {
           transformResponse: defaults.transformResponse,
           paramSerializer: defaults.paramSerializer
         }, requestConfig);
-        if(_.isString(config.paramSerializer)) {
+        if (_.isString(config.paramSerializer)) {
           config.paramSerializer = $injector.get(config.paramSerializer);
         }
         config.headers = mergeHeaders(requestConfig);
 
         var promise = $q.when(config);
-        _.forEach(interceptors, function (interceptor) {
+        _.forEach(interceptors, function(interceptor) {
           promise = promise.then(interceptor.request, interceptor.requestError);
         });
         promise = promise.then(serverRequest);
-        _.forEachRight(interceptors, function (interceptor) {
+        _.forEachRight(interceptors, function(interceptor) {
           promise = promise.then(interceptor.response, interceptor.responseError);
         });
-        promise.success = function (fn) {
-          promise.then(function (response) {
+        promise.success = function(fn) {
+          promise.then(function(response) {
             fn(response.data, response.status, response.headers, config);
           });
           return promise;
         };
-        promise.error = function (fn) {
-          promise.catch(function (response) {
+        promise.error = function(fn) {
+          promise.catch(function(response) {
             fn(response.data, response.status, response.headers, config);
           });
           return promise;
@@ -344,16 +344,16 @@ function $HttpProvider() {
       $http.defaults = defaults;
       $http.pendingRequests = [];
 
-      _.forEach(['get', 'head', 'delete'], function (method) {
-        $http[method] = function (url, config) {
+      _.forEach(['get', 'head', 'delete'], function(method) {
+        $http[method] = function(url, config) {
           return $http(_.extend(config || {}, {
             method: method.toUpperCase(),
             url: url
           }));
         };
       });
-      _.forEach(['post', 'put', 'patch'], function (method) {
-        $http[method] = function (url, data, config) {
+      _.forEach(['post', 'put', 'patch'], function(method) {
+        $http[method] = function(url, data, config) {
           return $http(_.extend(config || {}, {
             method: method.toUpperCase(),
             url: url,

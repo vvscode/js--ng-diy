@@ -554,5 +554,26 @@ describe('$compile', function() {
         expect(attrs1).toBe(attrs2);
       });
     });
+
+    it('sets prop for boolean attributes', function() {
+      registerAndCompile(
+        'myDirective',
+        '<input my-directive>', function(element, attrs) {
+          attrs.$set('disabled', true);
+          expect(element.prop('disabled')).toBe(true);
+        }
+      );
+    });
+
+    it('sets prop for boolean attributes even when not flushing', function() {
+      registerAndCompile(
+        'myDirective',
+        '<input my-directive>', function(element, attrs) {
+          attrs.$set('disabled', true, false);
+          expect(element.prop('disabled')).toBe(true);
+        }
+      );
+    });
+
   });
 });

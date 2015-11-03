@@ -52,6 +52,9 @@ function $CompileProvider($provide) {
           return _.map(factories, function(factory) {
             var directive = $injector.invoke(factory);
             directive.restrict = directive.restrict || 'A';
+            if (directive.link && !directive.compile) {
+              directive.compile = _.constant(directive.link);
+            }
             return directive;
           });
         }]);

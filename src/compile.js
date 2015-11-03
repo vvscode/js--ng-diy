@@ -142,21 +142,41 @@ function $CompileProvider($provide) {
     };
 
     function compile($compileNodes) {
-      compileNodes($compileNodes);
+      var compositeLinkFn = compileNodes($compileNodes);
       return function publicLinkFn(scope) {
         $compileNodes.data('$scope', scope);
+        compositeLinkFn(scope, $compileNodes);
       };
     }
 
     function compileNodes($compileNodes) {
-      _.forEach($compileNodes, function(node) {
+      var linkFns = [];
+      _.forEach($compileNodes, function(node, i) {
         var attrs = new Attributes($(node));
         var directives = collectDirectives(node, attrs);
-        applyDirectivesToNode(directives, node, attrs);
+        var nodeLinkFn;
+        if (directives.length) {
+          nodeLinkFn = applyDirectivesToNode(directives, node, attrs);
+        }
         if (node.childNodes && node.childNodes.length) {
           compileNodes(node.childNodes);
         }
+        if (nodeLinkFn) {
+          linkFns.push({
+            nodeLinkFn: nodeLinkFn,
+            idx: i
+          });
+        }
       });
+
+
+      function compositeLinkFn(scope, linkNodes) {
+        _.forEach(linkFns, function(linkFn) {
+          linkFn.nodeLinkFn(scope, linkNodes[linkFn.idx]);
+        });
+      }
+
+      return compositeLinkFn;
     }
 
     function collectDirectives(node, attrs) {
@@ -241,14 +261,26 @@ function $CompileProvider($provide) {
 
     function applyDirectivesToNode(directives, compileNode, attrs) {
       var $compileNode = $(compileNode);
+      var linkFns = [];
       _.forEach(directives, function(directive) {
         if (directive.$$start) {
           $compileNode = groupScan(compileNode, directive.$$start, directive.$$end);
         }
         if (directive.compile) {
-          directive.compile($compileNode, attrs);
+          var linkFn = directive.compile($compileNode, attrs);
+          if (linkFn) {
+            linkFns.push(linkFn);
+          }
         }
       });
+      function nodeLinkFn(scope, linkNode) {
+        _.forEach(linkFns, function(linkFn) {
+          var $element = $(linkNode);
+          linkFn(scope, $element, attrs);
+        });
+      }
+
+      return nodeLinkFn;
     }
 
     function groupScan(node, startAttr, endAttr) {

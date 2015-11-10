@@ -1158,7 +1158,7 @@ describe('$compile', function() {
       injector.invoke(function($compile, $rootScope) {
         var el = $('<div my-directive an-attr="42"></div>');
         $compile(el)($rootScope);
-        expect(givenScope.aScopeAttr).toEqual('42'`)
+        expect(givenScope.aScopeAttr).toEqual('42')
         ;
       });
     });
@@ -1377,6 +1377,26 @@ describe('$compile', function() {
         $compile(el)($rootScope);
         givenScope.myExpr({ argFromChild: 42 });
         expect(gotArg).toBe(42);
+      });
+    });
+
+    it('can be aliased with @ when given in directive attribute', function() {
+      var controllerInvoked;
+
+      function MyController() {
+        controllerInvoked = true;
+      }
+
+      var injector = createInjector(['ng', function($controllerProvider, $compileProvider) {
+        $controllerProvider.register('MyController', MyController);
+        $compileProvider.directive('myDirective', function() {
+          return { controller: '@' };
+        });
+      }]);
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div my-directive="MyController"></div>');
+        $compile(el)($rootScope);
+        expect(controllerInvoked).toBe(true);
       });
     });
 

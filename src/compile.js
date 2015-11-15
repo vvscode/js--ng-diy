@@ -399,6 +399,10 @@ function $CompileProvider($provide) {
           controllerDirectives = controllerDirectives || {};
           controllerDirectives[directive.name] = directive;
         }
+
+        if (directive.template) {
+          $compileNode.html(directive.template);
+        }
       });
 
       function nodeLinkFn(childLinkFn, scope, linkNode) {

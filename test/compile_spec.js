@@ -2065,6 +2065,25 @@ describe('$compile', function() {
           expect(otherCompileSpy).toHaveBeenCalled();
         });
       });
+
+      it('supports functions as values', function() {
+        var templateSpy = jasmine.createSpy()
+          .and.returnValue('/my_directive.html');
+        var injector = makeInjectorWithDirectives({
+          myDirective: function() {
+            return {
+              templateUrl: templateSpy
+            };
+          }
+        });
+        injector.invoke(function($compile) {
+          var el = $('<div my-directive></div>');
+          $compile(el);
+          // Check that templateUrl function was called with element and attrs
+          expect(templateSpy.calls.first().args[0][0]).toBe(el[0]);
+          expect(templateSpy.calls.first().args[1].myDirective).toBeDefined();
+        });
+      });
     });
   });
 });

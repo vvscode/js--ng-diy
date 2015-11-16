@@ -406,7 +406,7 @@ function $CompileProvider($provide) {
             throw 'Multiple directives asking for template';
           }
           templateDirective = directive;
-          $compileNode.html(_.isFunction(directive.template)?
+          $compileNode.html(_.isFunction(directive.template) ?
             directive.template($compileNode, attrs) :
             directive.template
           );
@@ -500,7 +500,11 @@ function $CompileProvider($provide) {
             linkFn.require && getControllers(linkFn.require, $element));
         });
         if (childLinkFn) {
-          childLinkFn(scope, linkNode.childNodes);
+          var scopeToChild = scope;
+          if (newIsolateScopeDirective && newIsolateScopeDirective.template) {
+            scopeToChild = isolateScope;
+          }
+          childLinkFn(scopeToChild, linkNode.childNodes);
         }
         _.forEach(postLinkFns, function(linkFn) {
           linkFn(

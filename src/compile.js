@@ -92,7 +92,7 @@ function $CompileProvider($provide) {
       this.$attr = {};
     }
 
-    function compileTemplateUrl(directives, $compileNode, attrs) {
+    function compileTemplateUrl(directives, $compileNode, attrs, previousCompileContext) {
       var origAsyncDirective = directives.shift();
       var derivedSyncDirective = _.extend({}, origAsyncDirective, { templateUrl: null });
       var templateUrl = _.isFunction(origAsyncDirective.templateUrl) ?
@@ -102,7 +102,7 @@ function $CompileProvider($provide) {
       $http.get(templateUrl).success(function(template) {
         directives.unshift(derivedSyncDirective);
         $compileNode.html(template);
-        applyDirectivesToNode(directives, $compileNode, attrs);
+        applyDirectivesToNode(directives, $compileNode, attrs, previousCompileContext);
         compileNodes($compileNode[0].childNodes);
       });
     }
@@ -323,13 +323,14 @@ function $CompileProvider($provide) {
       }
     }
 
-    function applyDirectivesToNode(directives, compileNode, attrs) {
+    function applyDirectivesToNode(directives, compileNode, attrs, previousCompileContext) {
+      previousCompileContext = previousCompileContext || {};
       var $compileNode = $(compileNode);
       var preLinkFns = [], postLinkFns = [], controllers = {};
       var newScopeDirective, newIsolateScopeDirective;
       var controllerDirectives;
-      var templateDirective;
-
+      var templateDirective = previousCompileContext.templateDirective;
+      
       function getControllers(require, $element) {
         if (_.isArray(require)) {
           return _.map(require, getControllers);
@@ -411,7 +412,11 @@ function $CompileProvider($provide) {
             directive.template);
         }
         if (directive.templateUrl) {
-          compileTemplateUrl(_.drop(directives, i), $compileNode, attrs);
+          if (templateDirective) {
+            throw 'Multiple directives asking for template';
+          }
+          templateDirective = directive;
+          compileTemplateUrl(_.drop(directives, i), $compileNode, attrs, { templateDirective: templateDirective });
           return false;
         } else if (directive.compile) {
           var linkFn = directive.compile($compileNode, attrs);

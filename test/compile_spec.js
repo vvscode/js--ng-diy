@@ -2318,6 +2318,22 @@ describe('$compile', function() {
       });
     });
 
+    it('is only allowed once per element', function() {
+      var injector = makeInjectorWithDirectives({
+        myTranscluder: function() {
+          return { transclude: true };
+        },
+        mySecondTranscluder: function() {
+          return { transclude: true };
+        }
+      });
+      injector.invoke(function($compile) {
+        var el = $('<div my-transcluder my-second-transcluder></div>');
+        expect(function() {
+          $compile(el);
+        }).toThrow();
+      });
+    });
 
   });
 

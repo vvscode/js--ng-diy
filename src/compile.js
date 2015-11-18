@@ -351,7 +351,7 @@ function $CompileProvider($provide) {
       var newIsolateScopeDirective = previousCompileContext.newIsolateScopeDirective;
       var controllerDirectives = previousCompileContext.controllerDirectives;
       var templateDirective = previousCompileContext.templateDirective;
-      var childTranscludeFn;
+      var childTranscludeFn, hasTranscludeDirective;
 
       function getControllers(require, $element) {
         if (_.isArray(require)) {
@@ -425,6 +425,10 @@ function $CompileProvider($provide) {
           controllerDirectives[directive.name] = directive;
         }
         if (directive.transclude) {
+          if (hasTranscludeDirective) {
+            throw 'Multiple directives asking for transclude';
+          }
+          hasTranscludeDirective = true;
           var $transcludedNodes = $compileNode.clone().contents();
           childTranscludeFn = compile($transcludedNodes);
           $compileNode.empty();

@@ -249,12 +249,13 @@ function $CompileProvider($provide) {
             }
             var boundTranscludeFn;
             if (linkFn.nodeLinkFn.transcludeOnThisElement) {
-              boundTranscludeFn = function(containingScope) {
-                var transcludedScope = scope.$new(false, containingScope);
+              boundTranscludeFn = function(transcludedScope, containingScope) {
+                if (!transcludedScope) {
+                  transcludedScope = scope.$new(false, containingScope);
+                }
                 return linkFn.nodeLinkFn.transclude(transcludedScope);
               };
             }
-
             linkFn.nodeLinkFn(
               linkFn.childLinkFn,
               childScope,
@@ -567,8 +568,8 @@ function $CompileProvider($provide) {
           controller();
         });
 
-        function scopeBoundTranscludeFn() {
-          return boundTranscludeFn(scope);
+        function scopeBoundTranscludeFn(transcludedScope) {
+          return boundTranscludeFn(transcludedScope, scope);
         }
 
         _.forEach(preLinkFns, function(linkFn) {

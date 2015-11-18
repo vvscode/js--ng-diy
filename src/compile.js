@@ -554,13 +554,18 @@ function $CompileProvider($provide) {
         _.forEach(controllers, function(controller) {
           controller();
         });
+
+        function boundTranscludeFn() {
+          return childTranscludeFn(scope);
+        }
+
         _.forEach(preLinkFns, function(linkFn) {
           linkFn(
             linkFn.isolateScope ? isolateScope : scope,
             $element,
             attrs,
             linkFn.require && getControllers(linkFn.require, $element),
-            childTranscludeFn
+            boundTranscludeFn
           );
         });
         if (childLinkFn) {
@@ -576,7 +581,7 @@ function $CompileProvider($provide) {
             $element,
             attrs,
             linkFn.require && getControllers(linkFn.require, $element),
-            childTranscludeFn
+            boundTranscludeFn
           );
         });
       }

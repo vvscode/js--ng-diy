@@ -197,9 +197,12 @@ function $CompileProvider($provide) {
 
     function compile($compileNodes) {
       var compositeLinkFn = compileNodes($compileNodes);
-      return function publicLinkFn(scope) {
+
+      return function publicLinkFn(scope, options) {
+        options = options || {};
+        var parentBoundTranscludeFn = options.parentBoundTranscludeFn;
         $compileNodes.data('$scope', scope);
-        compositeLinkFn(scope, $compileNodes);
+        compositeLinkFn(scope, $compileNodes, parentBoundTranscludeFn);
         return $compileNodes;
       };
     }
@@ -230,7 +233,7 @@ function $CompileProvider($provide) {
       });
 
 
-      function compositeLinkFn(scope, linkNodes) {
+      function compositeLinkFn(scope, linkNodes, parentBoundTranscludeFn) {
         var stableNodeList = [];
         _.forEach(linkFns, function(linkFn) {
           var nodeIdx = linkFn.idx;
@@ -255,7 +258,10 @@ function $CompileProvider($provide) {
                 }
                 return linkFn.nodeLinkFn.transclude(transcludedScope);
               };
+            } else if (parentBoundTranscludeFn) {
+              boundTranscludeFn = parentBoundTranscludeFn;
             }
+
             linkFn.nodeLinkFn(
               linkFn.childLinkFn,
               childScope,
@@ -265,7 +271,8 @@ function $CompileProvider($provide) {
           } else {
             linkFn.childLinkFn(
               scope,
-              node.childNodes
+              node.childNodes,
+              parentBoundTranscludeFn
             );
           }
         });
@@ -586,7 +593,7 @@ function $CompileProvider($provide) {
           if (newIsolateScopeDirective && newIsolateScopeDirective.template) {
             scopeToChild = isolateScope;
           }
-          childLinkFn(scopeToChild, linkNode.childNodes);
+          childLinkFn(scopeToChild, linkNode.childNodes, boundTranscludeFn);
         }
         _.forEach(postLinkFns, function(linkFn) {
           linkFn(

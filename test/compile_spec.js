@@ -2529,5 +2529,52 @@ describe('$compile', function() {
       });
     });
 
+    it('destroys scope passed through public link fn at the right time', function() {
+      var watchSpy = jasmine.createSpy();
+      var injector = makeInjectorWithDirectives({
+        myTranscluder: function($compile) {
+          return {
+            transclude: true,
+            link: function(scope, element, attrs, ctrl, transclude) {
+              var customTemplate = $('<div in-custom-template></div>');
+              element.append(customTemplate);
+              $compile(customTemplate)(scope, {
+                parentBoundTranscludeFn: transclude
+              });
+            }
+          };
+        },
+        inCustomTemplate: function() {
+          return {
+            scope: true,
+            link: function(scope, element, attrs, ctrl, transclude) {
+              element.append(transclude());
+              scope.$on('destroyNow', function() {
+                scope.$destroy();
+              });
+            }
+          };
+        },
+        inTransclude: function() {
+          return {
+            link: function(scope) {
+              scope.$watch(watchSpy);
+            }
+          };
+        }
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div my-transcluder><div in-transclude></div></div>');
+        $compile(el)($rootScope);
+        $rootScope.$apply();
+        expect(watchSpy.calls.count()).toBe(2);
+        $rootScope.$apply();
+        expect(watchSpy.calls.count()).toBe(3);
+        $rootScope.$broadcast('destroyNow');
+        $rootScope.$apply();
+        expect(watchSpy.calls.count()).toBe(3);
+      });
+    });
+
   });
 });

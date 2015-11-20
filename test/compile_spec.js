@@ -2549,7 +2549,6 @@ describe('$compile', function() {
       });
     });
 
-
     it('makes contents available to indirect child elements', function() {
       var injector = makeInjectorWithDirectives({
         myTranscluder: function() {
@@ -2572,7 +2571,6 @@ describe('$compile', function() {
         expect(el.find('> div > [in-template] > [in-transclude]').length).toBe(1);
       });
     });
-
 
     it('supports passing transclusion function to public link function', function() {
       var injector = makeInjectorWithDirectives({
@@ -2668,7 +2666,6 @@ describe('$compile', function() {
       });
     });
 
-
     describe('clone attach function', function() {
       it('can be passed to public link fn', function() {
         var injector = makeInjectorWithDirectives({});
@@ -2685,7 +2682,6 @@ describe('$compile', function() {
         });
       });
     });
-
 
     it('causes compiled elements to be cloned', function() {
       var injector = makeInjectorWithDirectives({});
@@ -2746,7 +2742,6 @@ describe('$compile', function() {
       });
     });
 
-
     it('can be used as the only transclusion function argument', function() {
       var injector = makeInjectorWithDirectives({
         myTranscluder: function() {
@@ -2798,5 +2793,28 @@ describe('$compile', function() {
       });
     });
 
+    it('can be used with multi-element directives', function() {
+      var injector = makeInjectorWithDirectives({
+        myTranscluder: function($compile) {
+          return {
+            transclude: true,
+            multiElement: true,
+            template: '<div in-template></div>',
+            link: function(scope, element, attrs, ctrl, transclude) {
+              element.find('[in-template]').append(transclude());
+            }
+          };
+        }
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $(
+          '<div><div my-transcluder-start><div in-transclude></div></div>' +
+          '<div my-transcluder-end></div></div>'
+        );
+        $compile(el)($rootScope);
+        expect(el.find('[my-transcluder-start] [in-template] [in-transclude]').length)
+          .toBe(1);
+      });
+    });
   });
 });

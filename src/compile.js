@@ -466,9 +466,13 @@ function $CompileProvider($provide) {
             throw 'Multiple directives asking for transclude';
           }
           hasTranscludeDirective = true;
-          var $transcludedNodes = $compileNode.clone().contents();
-          childTranscludeFn = compile($transcludedNodes);
-          $compileNode.empty();
+          if (directive.transclude === 'element') {
+            $compileNode.remove();
+          } else {
+            var $transcludedNodes = $compileNode.clone().contents();
+            childTranscludeFn = compile($transcludedNodes);
+            $compileNode.empty();
+          }
         }
         if (directive.template) {
           if (templateDirective) {

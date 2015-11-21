@@ -468,7 +468,7 @@ function $CompileProvider($provide) {
           hasTranscludeDirective = true;
           if (directive.transclude === 'element') {
             $compileNode.replaceWith(
-              $(document.createComment(' ' + directive.name + ':  ')));
+              $(document.createComment(' ' + directive.name + ': ' + attrs[directive.name] + ' ')));
           } else {
             var $transcludedNodes = $compileNode.clone().contents();
             childTranscludeFn = compile($transcludedNodes);

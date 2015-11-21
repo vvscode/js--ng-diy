@@ -2894,6 +2894,21 @@ describe('$compile', function() {
           expect(el.is(':empty')).toBe(true);
         });
       });
+
+      it('replaces the element with a comment', function() {
+        var injector = makeInjectorWithDirectives({
+          myTranscluder: function() {
+            return {
+              transclude: 'element'
+            };
+          }
+        });
+        injector.invoke(function($compile) {
+          var el = $('<div><div my-transcluder></div></div>');
+          $compile(el);
+          expect(el.html()).toEqual('<!-- myTranscluder:  -->');
+        });
+      });
     });
   });
 });

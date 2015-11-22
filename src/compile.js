@@ -112,6 +112,9 @@ function $CompileProvider($provide) {
           directives.push({
             priority: 100, compile: function() {
               return function link(scope, element, attrs) {
+                attrs.$$observers = attrs.$$observers || {};
+                attrs.$$observers[name] = attrs.$$observers[name] || [];
+                attrs.$$observers[name].$$inter = true;
                 scope.$watch(interpolateFn, function(newValue) {
                   attrs.$set(name, newValue);
                 });
@@ -147,7 +150,9 @@ function $CompileProvider($provide) {
         this.$$observers[key] = this.$$observers[key] || [];
         this.$$observers[key].push(fn);
         $rootScope.$evalAsync(function() {
-          fn(self[key]);
+          if (!self.$$observers[key].$$inter) {
+            fn(self[key]);
+          }
         });
         return function() {
           var index = self.$$observers[key].indexOf(fn);

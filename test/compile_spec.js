@@ -3720,5 +3720,24 @@ describe('$compile', function() {
       });
     });
 
+    it('fires observers just once upon registration', function() {
+      var observerSpy = jasmine.createSpy();
+      var injector = makeInjectorWithDirectives({
+        myDirective: function() {
+          return {
+            link: function(scope, element, attrs) {
+              attrs.$observe('alt', observerSpy);
+            }
+          };
+        }
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<img alt="{{myAltText}}" my-directive>');
+        $compile(el)($rootScope);
+        $rootScope.$apply();
+        expect(observerSpy.calls.count()).toBe(1);
+      });
+    });
+
   });
 });

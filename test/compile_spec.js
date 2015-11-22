@@ -3676,5 +3676,14 @@ describe('$compile', function() {
         expect(el.data('$binding')).toEqual(['myExpr', 'myOtherExpr']);
       });
     });
+
+    it('adds binding data to parent from multiple text nodes', function() {
+      var injector = makeInjectorWithDirectives({});
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div>{{myExpr}} <span>and</span> {{myOtherExpr}}</div>');
+        $compile(el)($rootScope);
+        expect(el.data('$binding')).toEqual(['myExpr', 'myOtherExpr']);
+      });
+    });
   });
 });

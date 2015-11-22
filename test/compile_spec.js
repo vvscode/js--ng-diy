@@ -3644,4 +3644,19 @@ describe('$compile', function() {
 
   });
 
+
+  describe('interpolation', function() {
+    it('is done for text nodes', function() {
+      var injector = makeInjectorWithDirectives({});
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div>My expression: {{myExpr}}</div>');
+        $compile(el)($rootScope);
+        $rootScope.$apply();
+        expect(el.html()).toEqual('My expression: ');
+        $rootScope.myExpr = 'Hello';
+        $rootScope.$apply();
+        expect(el.html()).toEqual('My expression: Hello');
+      });
+    });
+  });
 });

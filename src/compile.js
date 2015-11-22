@@ -98,12 +98,29 @@ function $CompileProvider($provide) {
     }
   };
 
-  this.$get = ['$injector', '$parse', '$controller', '$rootScope', '$http',
-    function($injector, $parse, $controller, $rootScope, $http) {
+  this.$get = ['$injector', '$parse', '$controller', '$rootScope', '$http', '$interpolate',
+    function($injector, $parse, $controller, $rootScope, $http, $interpolate) {
 
       function Attributes(element) {
         this.$$element = element;
         this.$attr = {};
+      }
+
+
+      function addTextInterpolateDirective(directives, text) {
+        var interpolateFn = $interpolate(text, true);
+        if (interpolateFn) {
+          directives.push({
+            priority: 0,
+            compile: function() {
+              return function link(scope, element) {
+                scope.$watch(interpolateFn, function(newValue) {
+                  element[0].nodeValue = newValue;
+                });
+              };
+            }
+          });
+        }
       }
 
       Attributes.prototype.$observe = function(key, fn) {
@@ -356,6 +373,8 @@ function $CompileProvider($provide) {
               attrs[normalizedName] = match[2] ? match[2].trim() : undefined;
             }
           }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          addTextInterpolateDirective(directives, node.nodeValue);
         }
         directives.sort(byPriority);
         return directives;

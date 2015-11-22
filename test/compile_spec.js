@@ -3685,5 +3685,18 @@ describe('$compile', function() {
         expect(el.data('$binding')).toEqual(['myExpr', 'myOtherExpr']);
       });
     });
+
+    it('is done for attributes', function() {
+      var injector = makeInjectorWithDirectives({});
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<img alt="{{myAltText}}">');
+        $compile(el)($rootScope);
+        $rootScope.$apply();
+        expect(el.attr('alt')).toEqual('');
+        $rootScope.myAltText = 'My favourite photo';
+        $rootScope.$apply();
+        expect(el.attr('alt')).toEqual('My favourite photo');
+      });
+    });
   });
 });

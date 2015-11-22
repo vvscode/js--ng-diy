@@ -106,6 +106,20 @@ function $CompileProvider($provide) {
         this.$attr = {};
       }
 
+      function addAttrInterpolateDirective(directives, value, name) {
+        var interpolateFn = $interpolate(value, true);
+        if (interpolateFn) {
+          directives.push({
+            priority: 100, compile: function() {
+              return function link(scope, element) {
+                scope.$watch(interpolateFn, function(newValue) {
+                  element.attr(name, newValue);
+                });
+              };
+            }
+          });
+        }
+      }
 
       function addTextInterpolateDirective(directives, text) {
         var interpolateFn = $interpolate(text, true);
@@ -350,6 +364,7 @@ function $CompileProvider($provide) {
               }
             }
             normalizedAttrName = directiveNormalize(name.toLowerCase());
+            addAttrInterpolateDirective(directives, attr.value, normalizedAttrName);
             addDirective(directives, normalizedAttrName, 'A', maxPriority, attrStartName, attrEndName);
             if (isNgAttr || !attrs.hasOwnProperty(normalizedAttrName)) {
               attrs[normalizedAttrName] = attr.value.trim();

@@ -30,4 +30,11 @@ describe('$interpolate', function() {
     var interp = $interpolate('First {{anAttr}}, then {{anotherAttr}}!');
     expect(interp({ anAttr: '42', anotherAttr: '43' })).toEqual('First 42, then 43!');
   });
+
+  it('passes through ill-defined interpolations', function() {
+    var injector = createInjector(['ng']);
+    var $interpolate = injector.get('$interpolate');
+    var interp = $interpolate('why u no }}work{{');
+    expect(interp({})).toEqual('why u no }}work{{');
+  });
 });

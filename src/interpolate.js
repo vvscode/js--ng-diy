@@ -1,6 +1,15 @@
 /*jshint globalstrict: true*/
 'use strict';
 function $InterpolateProvider() {
+  function stringify(value) {
+    if (_.isNull(value) || _.isUndefined(value)) {
+      return '';
+    } else if (_.isObject(value)) {
+      return JSON.stringify(value);
+    } else {
+      return '' + value;
+    }
+  }
 
   this.$get = ['$parse', function($parse) {
     function $interpolate(text) {
@@ -28,7 +37,7 @@ function $InterpolateProvider() {
       return function interpolationFn(context) {
         return _.reduce(parts, function(result, part) {
           if (_.isFunction(part)) {
-            return result + part(context);
+            return result + stringify(part(context));
           } else {
             return result + part;
           }

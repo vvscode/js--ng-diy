@@ -19,21 +19,10 @@ function $InterpolateProvider() {
     function $interpolate(text, mustHaveExpressions) {
       var index = 0;
       var parts = [];
-      var hasExpressions = false;
       var expressions = [];
       var expressionFns = [];
+      var expressionPositions = [];
       var startIndex, endIndex, exp, expFn;
-
-      function compute(context) {
-        return _.reduce(parts, function(result, part) {
-          if (_.isFunction(part)) {
-            return result + stringify(part(context));
-          } else {
-            return result + part;
-          }
-        }, '');
-      }
-
       while (index < text.length) {
         startIndex = text.indexOf('{{', index);
         if (startIndex !== -1) {
@@ -45,10 +34,10 @@ function $InterpolateProvider() {
           }
           exp = text.substring(startIndex + 2, endIndex);
           expFn = $parse(exp);
-          parts.push(expFn);
           expressions.push(exp);
           expressionFns.push(expFn);
-          hasExpressions = true;
+          expressionPositions.push(parts.length);
+          parts.push(expFn);
           index = endIndex + 2;
         } else {
           parts.push(unescapeText(text.substring(index)));
@@ -56,14 +45,31 @@ function $InterpolateProvider() {
         }
       }
 
+      function compute(values) {
+        _.forEach(values, function(value, i) {
+          parts[expressionPositions[i]] = stringify(value);
+        });
+        return parts.join('');
+      }
+
       if (expressions.length || !mustHaveExpressions) {
         return _.extend(function interpolationFn(context) {
-          return compute(context);
+          var values = _.map(expressionFns, function(expressionFn) {
+            return expressionFn(context);
+          });
+          return compute(values);
         }, {
           expressions: expressions,
           $$watchDelegate: function(scope, listener) {
-            return scope.$watchGroup(expressionFns, function() {
-              listener(compute(scope));
+            var lastValue;
+            return scope.$watchGroup(expressionFns, function(newValues, oldValues) {
+              var newValue = compute(newValues);
+              listener(
+                newValue,
+                (newValues === oldValues ? newValue : lastValue),
+                scope
+              );
+              lastValue = newValue;
             });
           }
         });

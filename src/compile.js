@@ -110,14 +110,18 @@ function $CompileProvider($provide) {
         var interpolateFn = $interpolate(value, true);
         if (interpolateFn) {
           directives.push({
-            priority: 100, compile: function() {
-              return function link(scope, element, attrs) {
-                attrs.$$observers = attrs.$$observers || {};
-                attrs.$$observers[name] = attrs.$$observers[name] || [];
-                attrs.$$observers[name].$$inter = true;
-                scope.$watch(interpolateFn, function(newValue) {
-                  attrs.$set(name, newValue);
-                });
+            priority: 100,
+            compile: function() {
+              return {
+                pre: function link(scope, element, attrs) {
+                  attrs.$$observers = attrs.$$observers || {};
+                  attrs.$$observers[name] = attrs.$$observers[name] || [];
+                  attrs.$$observers[name].$$inter = true;
+                  attrs[name] = interpolateFn(scope);
+                  scope.$watch(interpolateFn, function(newValue) {
+                    attrs.$set(name, newValue);
+                  });
+                }
               };
             }
           });

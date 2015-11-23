@@ -3739,5 +3739,25 @@ describe('$compile', function() {
       });
     });
 
+    it('is done for attributes by the time other directive is linked', function() {
+      var gotMyAttr;
+      var injector = makeInjectorWithDirectives({
+        myDirective: function() {
+          return {
+            link: function(scope, element, attrs) {
+              gotMyAttr = attrs.myAttr;
+            }
+          };
+        }
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div my-directive my-attr="{{myExpr}}"></div>');
+        $rootScope.myExpr = 'Hello';
+        $compile(el)($rootScope);
+        expect(gotMyAttr).toEqual('Hello');
+      });
+    });
+
+
   });
 });

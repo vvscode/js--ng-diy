@@ -114,6 +114,9 @@ function $CompileProvider($provide) {
             compile: function() {
               return {
                 pre: function link(scope, element, attrs) {
+                  if (/^(on[a-z]+|formaction)$/.test(name)) {
+                    throw 'Interpolations for HTML DOM event attributes not allowed';
+                  }
                   var newValue = attrs[name];
                   if (newValue !== value) {
                     interpolateFn = newValue && $interpolate(newValue, true);

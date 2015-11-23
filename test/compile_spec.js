@@ -3816,5 +3816,17 @@ describe('$compile', function() {
         expect(el.attr('my-attr')).toBeFalsy();
       });
     });
+
+    it('cannot be done for event handler attributes', function() {
+      var injector = makeInjectorWithDirectives({});
+      injector.invoke(function($compile, $rootScope) {
+        $rootScope.myFunction = function() {
+        };
+        var el = $('<button onclick="{{myFunction()}}"></button>');
+        expect(function() {
+          $compile(el)($rootScope);
+        }).toThrow();
+      });
+    });
   });
 });

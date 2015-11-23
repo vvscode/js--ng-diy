@@ -21,7 +21,18 @@ function $InterpolateProvider() {
       var parts = [];
       var hasExpressions = false;
       var expressions = [];
+      var expressionFns = [];
       var startIndex, endIndex, exp, expFn;
+
+      function compute(context) {
+        return _.reduce(parts, function(result, part) {
+          if (_.isFunction(part)) {
+            return result + stringify(part(context));
+          } else {
+            return result + part;
+          }
+        }, '');
+      }
 
       while (index < text.length) {
         startIndex = text.indexOf('{{', index);
@@ -36,6 +47,7 @@ function $InterpolateProvider() {
           expFn = $parse(exp);
           parts.push(expFn);
           expressions.push(exp);
+          expressionFns.push(expFn);
           hasExpressions = true;
           index = endIndex + 2;
         } else {
@@ -46,15 +58,14 @@ function $InterpolateProvider() {
 
       if (expressions.length || !mustHaveExpressions) {
         return _.extend(function interpolationFn(context) {
-          return _.reduce(parts, function(result, part) {
-            if (_.isFunction(part)) {
-              return result + stringify(part(context));
-            } else {
-              return result + part;
-            }
-          }, '');
+          return compute(context);
         }, {
-          expressions: expressions
+          expressions: expressions,
+          $$watchDelegate: function(scope, listener) {
+            return scope.$watchGroup(expressionFns, function() {
+              listener(compute(scope));
+            });
+          }
         });
       }
     }

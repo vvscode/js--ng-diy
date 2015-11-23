@@ -102,4 +102,11 @@ describe('$interpolate', function() {
     expect(interp).not.toBeFalsy();
   });
 
+  it('uses a watch delegate', function() {
+    var injector = createInjector(['ng']);
+    var $interpolate = injector.get('$interpolate');
+    var interp = $interpolate('has an {{expr}}');
+    expect(interp.$$watchDelegate).toBeDefined();
+  });
+
 });

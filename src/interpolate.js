@@ -30,11 +30,19 @@ function $InterpolateProvider() {
     }
   }
 
-  function unescapeText(text) {
-    return text.replace(/\\{\\{/g, '{{').replace(/\\}\\}/g, '}}');
+  function escapeChar(char) {
+    return '\\\\\\' + char;
   }
 
   this.$get = ['$parse', function($parse) {
+    var escapedStartMatcher = new RegExp(startSymbol.replace(/./g, escapeChar), 'g');
+    var escapedEndMatcher = new RegExp(endSymbol.replace(/./g, escapeChar), 'g');
+
+    function unescapeText(text) {
+      return text.replace(escapedStartMatcher, startSymbol)
+        .replace(escapedEndMatcher, endSymbol);
+    }
+
     function $interpolate(text, mustHaveExpressions) {
       var index = 0;
       var parts = [];

@@ -152,4 +152,14 @@ describe('$interpolate', function() {
     var interpFn = $interpolate('{{myExpr}}');
     expect(interpFn({ myExpr: 42 })).toEqual('{{myExpr}}');
   });
+
+  it('supports unescaping for reconfigured symbols', function() {
+    var injector = createInjector(['ng', function($interpolateProvider) {
+      $interpolateProvider.startSymbol('FOO').endSymbol('OOF');
+    }]);
+    var $interpolate = injector.get('$interpolate');
+    var interpFn = $interpolate('\\F\\O\\OmyExpr\\O\\O\\F');
+    expect(interpFn({})).toEqual('FOOmyExprOOF');
+  });
+
 });

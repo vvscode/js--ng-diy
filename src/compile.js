@@ -114,6 +114,11 @@ function $CompileProvider($provide) {
             compile: function() {
               return {
                 pre: function link(scope, element, attrs) {
+                  var newValue = attrs[name];
+                  if (newValue !== value) {
+                    interpolateFn = $interpolate(newValue, true);
+                  }
+
                   attrs.$$observers = attrs.$$observers || {};
                   attrs.$$observers[name] = attrs.$$observers[name] || [];
                   attrs.$$observers[name].$$inter = true;

@@ -1,6 +1,25 @@
 /*jshint globalstrict: true*/
 'use strict';
 function $InterpolateProvider() {
+  var startSymbol = '{{';
+  var endSymbol = '}}';
+  this.startSymbol = function(value) {
+    if (value) {
+      startSymbol = value;
+      return this;
+    } else {
+      return startSymbol;
+    }
+  };
+  this.endSymbol = function(value) {
+    if (value) {
+      endSymbol = value;
+      return this;
+    } else {
+      return endSymbol;
+    }
+  };
+
   function stringify(value) {
     if (_.isNull(value) || _.isUndefined(value)) {
       return '';
@@ -75,6 +94,9 @@ function $InterpolateProvider() {
         });
       }
     }
+
+    $interpolate.startSymbol = _.constant(startSymbol);
+    $interpolate.endSymbol = _.constant(endSymbol);
 
     return $interpolate;
   }];

@@ -3797,5 +3797,24 @@ describe('$compile', function() {
         expect(el.attr('my-attr')).toEqual('Other Hello');
       });
     });
+
+    it('is done for attributes so that compile-time removals apply', function() {
+      var injector = makeInjectorWithDirectives({
+        myDirective: function() {
+          return {
+            compile: function(element, attrs) {
+              attrs.$set('myAttr', null);
+            }
+          };
+        }
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div my-directive my-attr="{{myExpr}}"></div>');
+        $rootScope.myExpr = 'Hello';
+        $compile(el)($rootScope);
+        $rootScope.$apply();
+        expect(el.attr('my-attr')).toBeFalsy();
+      });
+    });
   });
 });

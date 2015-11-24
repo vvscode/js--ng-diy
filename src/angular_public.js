@@ -18,4 +18,5 @@ function publishExternalAPI() {
   ngModule.provider('$controller', $ControllerProvider);
   ngModule.directive('ngController', ngControllerDirective);
   ngModule.directive('ngTransclude', ngTranscludeDirective);
+  ngModule.directive('ngClick', ngClickDirective);
 }
